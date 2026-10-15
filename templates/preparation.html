@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}Prepare for My Next Interview — AI Interview Performance Analyzer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="header-flex">
+        <div>
+            <span class="badge badge-primary">Practice Recommendations</span>
+            <h1 class="page-title">What to Improve Next</h1>
+            <p class="page-subtitle">
+                Targeted practice questions and STAR drills based on your interview results for {{ interview.job_role }}.
+            </p>
+        </div>
+        <div class="header-actions">
+            <a href="{{ url_for('interview_setup') }}" class="btn-primary">Practice Another Interview →</a>
+            <a href="{{ url_for('dashboard') }}" class="btn-outline">Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <!-- Left Column: Priority Weak Areas & Action Drills -->
+    <div class="plans-column">
+        <h3 class="section-title">Prioritized Action Drills</h3>
+        
+        {% for plan in plans %}
+            <div class="card plan-card-detailed">
+                <div class="plan-header-flex">
+                    <span class="badge badge-warning">Priority {{ loop.index }}</span>
+                    <span class="plan-status-badge badge {% if plan.status == 'completed' %}badge-success{% else %}badge-primary{% endif %}">
+                        {{ plan.status|title }}
+                    </span>
+                </div>
+
+                <h4 class="plan-weak-area">{{ plan.weak_area }}</h4>
+                <p class="plan-rec-text">{{ plan.recommendation }}</p>
+
+                <div class="ai-focus-box">
+                    <strong>🎯 AI Focus Strategy:</strong>
+                    <p>{{ plan.ai_focus }}</p>
+                </div>
+
+                <div class="practice-questions-box">
+                    <h5>Recommended Practice Questions:</h5>
+                    <ul class="practice-list">
+                        {% for pq in plan.practice_questions %}
+                            <li>
+                                <span>{{ pq }}</span>
+                                <button type="button" class="btn-outline-sm btn-drill-pick" onclick="selectDrill('{{ plan.plan_id }}', '{{ pq|escape }}')">Practice</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Right Column: Interactive Practice Sandbox -->
+    <div class="sandbox-column">
+        <div class="card sandbox-card sticky-sandbox">
+            <h3 class="section-title">Interactive Practice Sandbox</h3>
+            <p class="card-subtitle">Select a drill question from the left or practice applying the STAR method below.</p>
+
+            <div class="selected-question-box" id="selectedQuestionDisplay">
+                <span class="box-label">Target Practice Question</span>
+                <p id="practiceQuestionText">Select a question from your preparation plan to begin interactive practice.</p>
+            </div>
+
+            <form id="practiceForm" onsubmit="handlePracticeSubmit(event)">
+                <input type="hidden" id="activePlanId" value="">
+
+                <div class="form-group" style="margin-top: 1.25rem;">
+                    <div class="star-helpers">
+                        <span class="helper-pill">S - Situation</span>
+                        <span class="helper-pill">T - Task</span>
+                        <span class="helper-pill">A - Action</span>
+                        <span class="helper-pill">R - Result</span>
+                    </div>
+                    <label for="practiceAnswer" class="form-label">Your Practice Response</label>
+                    <textarea id="practiceAnswer" class="form-control" rows="8" placeholder="Draft your answer following the STAR structure. Mention the concrete actions you took and measurable outcomes..."></textarea>
+                </div>
+
+                <button type="submit" id="submitDrillBtn" class="btn-primary btn-block">
+                    Evaluate Practice with AI
+                </button>
+            </form>
+
+            <div id="drillFeedbackBox" class="drill-feedback-box" style="display: none;">
+                <h4>AI Practice Assessment:</h4>
+                <p id="drillFeedbackText"></p>
+                <div id="starDetectedRow" class="star-tags-row"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function selectDrill(planId, questionText) {
+    document.getElementById('activePlanId').value = planId;
+    document.getElementById('practiceQuestionText').innerText = questionText;
+    document.getElementById('practiceAnswer').focus();
+    document.getElementById('drillFeedbackBox').style.display = 'none';
+}
+
+function handlePracticeSubmit(e) {
+    e.preventDefault();
+    const planId = document.getElementById('activePlanId').value;
+    const question = document.getElementById('practiceQuestionText').innerText;
+    const answer = document.getElementById('practiceAnswer').value.trim();
+
+    if (!answer) {
+        alert("Please write a practice answer first.");
+        return;
+    }
+
+    const btn = document.getElementById('submitDrillBtn');
+    btn.disabled = true;
+    btn.innerText = "Evaluating Practice...";
+
+    fetch("{{ url_for('submit_practice') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            plan_id: planId,
+            question: question,
+            answer: answer
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerText = "Evaluate Practice with AI";
+
+        const feedbackBox = document.getElementById('drillFeedbackBox');
+        const feedbackText = document.getElementById('drillFeedbackText');
+        const tagsRow = document.getElementById('starDetectedRow');
+
+        feedbackBox.style.display = 'block';
+        feedbackText.innerText = data.feedback;
+
+        tagsRow.innerHTML = '';
+        if (data.star_elements_found && data.star_elements_found.length > 0) {
+            tagsRow.innerHTML = '<strong>Key Action Words Detected:</strong> ' +
+                data.star_elements_found.map(w => `<span class="badge badge-success">${w}</span>`).join(' ');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        btn.disabled = false;
+        btn.innerText = "Evaluate Practice with AI";
+        alert("Error evaluating practice.");
+    });
+}
+</script>
+
+<style>
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 1rem;
+}
+.plan-card-detailed {
+    margin-bottom: 1.5rem;
+    padding: 1.75rem;
+}
+.plan-header-flex {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+.plan-weak-area {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 0.5rem;
+}
+.plan-rec-text {
+    font-size: 0.92rem;
+    color: var(--slate);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+}
+.ai-focus-box {
+    background: var(--primary-soft);
+    border: 1px solid #c7d2fe;
+    border-radius: var(--radius-sm);
+    padding: 0.85rem 1rem;
+    font-size: 0.88rem;
+    margin-bottom: 1.25rem;
+}
+.ai-focus-box strong {
+    color: var(--primary);
+    display: block;
+    margin-bottom: 0.25rem;
+}
+.practice-questions-box h5 {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 0.6rem;
+}
+.practice-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+.practice-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-page);
+    padding: 0.65rem 0.85rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    font-size: 0.88rem;
+    gap: 0.75rem;
+}
+.btn-drill-pick {
+    white-space: nowrap;
+}
+.sticky-sandbox {
+    position: sticky;
+    top: 5rem;
+}
+.selected-question-box {
+    background: var(--bg-page);
+    border-left: 4px solid var(--accent);
+    padding: 1rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: 1rem;
+}
+.box-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 0.25rem;
+}
+.selected-question-box p {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--navy);
+}
+.star-helpers {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+.helper-pill {
+    font-size: 0.75rem;
+    background: var(--bg-page);
+    border: 1px solid var(--border);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+    color: var(--muted);
+}
+.drill-feedback-box {
+    margin-top: 1.25rem;
+    padding: 1rem;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+}
+.drill-feedback-box h4 {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 0.4rem;
+}
+.star-tags-row {
+    margin-top: 0.6rem;
+    display: flex;
+    gap: 0.35rem;
+    align-items: center;
+    flex-wrap: wrap;
+    font-size: 0.82rem;
+}
+</style>
+{% endblock %}

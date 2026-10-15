@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}Interviewer Workspace — AI Interview Performance Analyzer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="header-flex">
+        <div>
+            <div class="hero-badge-pill" style="margin-bottom: 0.5rem;">
+                <span>💼 Professional Interviewer Console</span>
+            </div>
+            <h1 class="page-title">Interviewer Workspace</h1>
+            <p class="page-subtitle">Schedule mock sessions, assign candidates, conduct live evaluations, and submit scores.</p>
+        </div>
+        <div class="header-actions">
+            <button type="button" class="btn-primary pill-btn" onclick="toggleModal('createSessionModal')">
+                + Create New Session
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Interviewer Stats Strip -->
+<div class="stats-row grid-3" style="margin-bottom: 1.5rem;">
+    <div class="card stat-card soft-shadow">
+        <span class="stat-label">Total Sessions Created</span>
+        <div class="stat-value">{{ sessions|length }}</div>
+        <p class="stat-hint">Managed interview evaluations</p>
+    </div>
+
+    <div class="card stat-card soft-shadow">
+        <span class="stat-label">Completed Sessions</span>
+        <div class="stat-value text-success">
+            {{ sessions|selectattr("status", "equalto", "completed")|list|length }}
+        </div>
+        <p class="stat-hint">Evaluations finalized with scores</p>
+    </div>
+
+    <div class="card stat-card soft-shadow">
+        <span class="stat-label">Pending / Scheduled</span>
+        <div class="stat-value text-muted">
+            {{ sessions|selectattr("status", "equalto", "scheduled")|list|length }}
+        </div>
+        <p class="stat-hint">Awaiting interview conduction</p>
+    </div>
+</div>
+
+<!-- Sessions Table Card -->
+<div class="card">
+    <div class="card-header-flex">
+        <div>
+            <h3 class="section-title">My Managed Interview Sessions</h3>
+            <p class="card-subtitle">Review scheduled sessions, conduct evaluations, and track scores.</p>
+        </div>
+    </div>
+
+    {% if sessions %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Title / Role</th>
+                        <th>Candidate</th>
+                        <th>Type & Level</th>
+                        <th>Scheduled</th>
+                        <th>Status</th>
+                        <th>Overall Score</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in sessions %}
+                        <tr>
+                            <td>
+                                <strong>{{ s.title }}</strong>
+                                <span class="table-sub">{{ s.job_role }}</span>
+                            </td>
+                            <td>
+                                {% if s.candidate_name %}
+                                    <strong>{{ s.candidate_name }}</strong>
+                                    <span class="table-sub">{{ s.candidate_email }}</span>
+                                {% else %}
+                                    <span class="badge">Unassigned</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge">{{ s.interview_type }}</span>
+                                <span class="badge">{{ s.difficulty }}</span>
+                            </td>
+                            <td class="table-sub">{{ s.scheduled_time }}</td>
+                            <td>
+                                <span class="badge {% if s.status == 'completed' %}badge-success{% else %}badge-warning{% endif %}">
+                                    {{ s.status|title }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if s.status == 'completed' and s.overall_score > 0 %}
+                                    <strong class="score-highlight">{{ s.overall_score }}%</strong>
+                                {% else %}
+                                    <span class="table-sub">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('interviewer_conduct_session', session_id=s.session_id) }}" class="btn-primary-sm">
+                                    {% if s.status == 'completed' %}Review Evaluation{% else %}Conduct Interview →{% endif %}
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state" style="padding: 2.5rem 1rem;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📋</div>
+            <h4>No Interview Sessions Created Yet</h4>
+            <p>Schedule your first interview session to conduct live candidate assessments.</p>
+            <button type="button" class="btn-primary" style="margin-top: 1rem;" onclick="toggleModal('createSessionModal')">
+                Schedule First Session
+            </button>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Modal: Create Interview Session -->
+<div id="createSessionModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-dialog card">
+        <div class="modal-header">
+            <h3>Schedule Interview Session</h3>
+            <button type="button" class="modal-close-btn" onclick="toggleModal('createSessionModal')">×</button>
+        </div>
+
+        <form action="{{ url_for('interviewer_create_session') }}" method="POST">
+            <div class="form-group">
+                <label for="title" class="form-label">Session Title *</label>
+                <input type="text" id="title" name="title" class="form-control" placeholder="e.g. Round 1 Technical Systems Interview" required>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="job_role" class="form-label">Target Role *</label>
+                    <select id="job_role" name="job_role" class="form-control">
+                        <option value="Software Developer" selected>Software Developer / Engineer</option>
+                        <option value="Web Developer">Full Stack / Web Developer</option>
+                        <option value="Data Analyst">Data Analyst</option>
+                        <option value="AI/ML Engineer">AI / ML Engineer</option>
+                        <option value="Cybersecurity Analyst">Cybersecurity Analyst</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="interview_type" class="form-label">Interview Type *</label>
+                    <select id="interview_type" name="interview_type" class="form-control">
+                        <option value="Technical" selected>Technical & Systems</option>
+                        <option value="HR">HR & Behavioral (STAR)</option>
+                        <option value="Role-based">Role-Based Real Scenarios</option>
+                        <option value="Resume-based">Resume-Based Deep Dive</option>
+                        <option value="Coding">Coding & Problem Solving</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="difficulty" class="form-label">Difficulty Level</label>
+                    <select id="difficulty" name="difficulty" class="form-control">
+                        <option value="Easy">Beginner</option>
+                        <option value="Medium" selected>Intermediate / Standard</option>
+                        <option value="Hard">Advanced / Senior</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="candidate_id" class="form-label">Assign Candidate (Student)</label>
+                    <select id="candidate_id" name="candidate_id" class="form-control">
+                        <option value="">Unassigned (Open for Claiming)</option>
+                        {% for st in students %}
+                            <option value="{{ st.user_id }}">{{ st.name }} ({{ st.email }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="scheduled_time" class="form-label">Scheduled Date & Time</label>
+                <input type="datetime-local" id="scheduled_time" name="scheduled_time" class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Select Interview Questions (Optional)</label>
+                <div class="questions-checklist-box">
+                    {% for q in questions[:8] %}
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="question_ids" value="{{ q.id }}">
+                            <span>[{{ q.difficulty }}] {{ q.question_text }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="modal-footer" style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button type="button" class="btn-outline" onclick="toggleModal('createSessionModal')">Cancel</button>
+                <button type="submit" class="btn-primary">Create Session</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function toggleModal(id) {
+    const el = document.getElementById(id);
+    el.style.display = (el.style.display === 'none' || !el.style.display) ? 'flex' : 'none';
+}
+</script>
+
+<style>
+.modal-backdrop {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+.modal-dialog {
+    max-width: 650px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 2rem;
+    background: #ffffff;
+    border-radius: var(--radius-lg);
+}
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+}
+.modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.6rem;
+    cursor: pointer;
+    color: var(--muted);
+}
+.questions-checklist-box {
+    max-height: 160px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.75rem;
+    background: var(--bg-page);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.checkbox-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--navy);
+    cursor: pointer;
+}
+.checkbox-item input {
+    margin-top: 0.2rem;
+}
+</style>
+{% endblock %}

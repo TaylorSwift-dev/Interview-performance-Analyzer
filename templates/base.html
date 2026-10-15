@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}InterviewPrep AI — Practice Smarter, Interview Better{% endblock %}</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js for Interactive Visual Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('index') }}" class="nav-logo">
+                <span class="logo-badge">✨</span>
+                <span class="logo-text">InterviewPrep <strong>AI</strong></span>
+            </a>
+            
+            <!-- Mobile Menu Toggle Button -->
+            <button class="nav-mobile-toggle" id="navToggleBtn" onclick="toggleMobileNav()" aria-label="Toggle navigation">
+                <span>☰</span>
+            </button>
+
+            <!-- Navigation Links -->
+            <div class="nav-links" id="navLinksMenu">
+                {% if not session.get('user_id') %}
+                    <!-- Public Logged-Out Navigation (Explicitly Visible on Desktop & Mobile) -->
+                    <a href="{{ url_for('index') }}" class="nav-item {% if request.path == '/' %}active{% endif %}">Home</a>
+                    <a href="{{ url_for('index') }}#features" class="nav-item">Features</a>
+                    <a href="{{ url_for('login') }}" class="nav-item {% if request.path == '/login' %}active{% endif %}">Student Login</a>
+                    <a href="{{ url_for('interviewer_login') }}" class="nav-item {% if request.path == '/interviewer/login' %}active{% endif %}">Interviewer Login</a>
+                    <a href="{{ url_for('register') }}" class="btn-pastel-purple pill-btn nav-cta-btn">Get Started</a>
+                {% else %}
+                    <!-- Authenticated Navigation -->
+                    {% if session.get('user_role') == 'interviewer' %}
+                        <a href="{{ url_for('interviewer_dashboard') }}" class="nav-item {% if '/interviewer' in request.path %}active{% endif %}">Interviewer Sessions</a>
+                        <a href="{{ url_for('question_bank_view') }}" class="nav-item {% if '/question-bank' in request.path %}active{% endif %}">Question Bank</a>
+                        <a href="{{ url_for('profile_view') }}" class="nav-item {% if '/profile' in request.path %}active{% endif %}">My Profile</a>
+                    {% else %}
+                        <a href="{{ url_for('student_dashboard') }}" class="nav-item {% if request.path in ['/dashboard', '/student/dashboard'] %}active{% endif %}">Dashboard</a>
+                        <a href="{{ url_for('aptitude_setup_view') }}" class="nav-item {% if '/aptitude' in request.path %}active{% endif %}">Aptitude</a>
+                        <a href="{{ url_for('interview_setup') }}" class="nav-item {% if '/interview' in request.path and '/interviewer' not in request.path %}active{% endif %}">Mock Interview</a>
+                        <a href="{{ url_for('student_interviews_view') }}" class="nav-item {% if request.path == '/my-interviews' %}active{% endif %}">Interviews</a>
+                        <a href="{{ url_for('question_bank_view') }}" class="nav-item {% if '/question-bank' in request.path %}active{% endif %}">Question Bank</a>
+                        <a href="{{ url_for('resume_view') }}" class="nav-item {% if '/resume' in request.path %}active{% endif %}">My Resumes</a>
+                        <a href="{{ url_for('progress_view') }}" class="nav-item {% if '/progress' in request.path %}active{% endif %}">Progress</a>
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <!-- Auth Status Right Side -->
+            {% if session.get('user_id') %}
+                <div class="nav-auth">
+                    <a href="{{ url_for('profile_view') }}" class="user-pill" title="View & Edit Profile">
+                        <span class="avatar-circle">{{ session.get('user_name', 'User')[0] }}</span>
+                        <span class="user-name">{{ session.get('user_name', 'Student') }}</span>
+                        {% if session.get('user_role') == 'interviewer' %}
+                            <span class="badge badge-accent" style="font-size: 0.68rem; padding: 0.1rem 0.4rem;">Interviewer</span>
+                        {% endif %}
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="btn-outline-sm">Sign Out</a>
+                </div>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Flash Notification Messages -->
+    <div class="flash-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <span class="alert-icon">
+                            {% if category == 'success' %}✓
+                            {% elif category == 'danger' %}✕
+                            {% elif category == 'warning' %}⚠
+                            {% else %}ℹ{% endif %}
+                        </span>
+                        <span class="alert-message">{{ message }}</span>
+                        <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="main-wrapper">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-col">
+                <div class="footer-logo">InterviewPrep <strong>AI</strong></div>
+                <p class="footer-desc">
+                    Intelligent interview preparation platform. Master aptitude tests, practice realistic mock interviews, and prepare for career opportunities.
+                </p>
+                <p class="footer-copy">&copy; 2026 InterviewPrep AI. All rights reserved.</p>
+            </div>
+            <div class="footer-col links-col">
+                <h4>Practice Modules</h4>
+                <ul>
+                    <li><a href="{{ url_for('student_dashboard') }}">Candidate Dashboard</a></li>
+                    <li><a href="{{ url_for('aptitude_setup_view') }}">Aptitude Practice</a></li>
+                    <li><a href="{{ url_for('interview_setup') }}">AI Mock Interview</a></li>
+                    <li><a href="{{ url_for('student_interviews_view') }}">Interviewer Sessions</a></li>
+                    <li><a href="{{ url_for('question_bank_view') }}">Question Bank</a></li>
+                    <li><a href="{{ url_for('resume_view') }}">My Resumes</a></li>
+                    <li><a href="{{ url_for('progress_view') }}">Progress</a></li>
+                </ul>
+            </div>
+            <div class="footer-col links-col">
+                <h4>Account & Portals</h4>
+                <ul>
+                    <li><a href="{{ url_for('login') }}">Student Login</a></li>
+                    <li><a href="{{ url_for('register') }}">Student Registration</a></li>
+                    <li><a href="{{ url_for('interviewer_login') }}">Interviewer Login</a></li>
+                    <li><a href="{{ url_for('interviewer_register') }}">Request Interviewer Access</a></li>
+                    <li><a href="{{ url_for('forgot_password') }}">Reset Password</a></li>
+                </ul>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+    function toggleMobileNav() {
+        const menu = document.getElementById('navLinksMenu');
+        menu.classList.toggle('mobile-open');
+    }
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

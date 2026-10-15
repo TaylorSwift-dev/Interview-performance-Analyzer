@@ -1,89 +1,190 @@
 # AI Interview Performance Analyzer
-### Academic Field Engineering Project (FEP) — Level: BTech Computer Engineering (2nd Year)
+### Full-Stack AI Interview Preparation Platform
 
-> **Core Philosophy:** "We are not just conducting an AI interview. We are using every interview attempt to understand the candidate, identify what needs improvement, and prepare them for the next interview."
+> **Prepare Smarter. Interview Better.**  
+> A modern, full-stack AI interview preparation and evaluation platform designed for students, job candidates, and campus interviewers. Built with Flask, SQLite / Supabase PostgreSQL, Chart.js, and Google Gemini AI.
 
 ---
 
-## 🌟 The Continuous Improvement Cycle
+## 🌟 Key Platform Features
+
+### 1. 🧮 Aptitude Practice Room
+- **4 Core Aptitude Domains:** Quantitative Aptitude, Logical Reasoning, Verbal Ability, and Data Interpretation.
+- **Multiple Test Presets:** Quick 5-Question Sprint, Standard 10-Question Test, or Comprehensive Mock Assessment.
+- **Interactive Exam Studio:** Real-time countdown timer, dynamic question palette with status indicators (Unanswered, Answered, Current), instant grading, and step-by-step mathematical/logical explanations for every question.
+- **Persistent Attempt History:** Track test scores over time to monitor foundational problem-solving readiness.
+
+### 2. 🎙️ AI Mock Interview Room ("Ava — AI Interviewer")
+- **Dual-Participant Experience:** Professional side-by-side room layout pairing the candidate with **Ava — AI Interviewer**, complete with live status dots ("Listening", "Candidate Ready") and realistic avatar representations.
+- **Voice Dictation & Text-to-Speech:** Integrated Web Speech API enables spoken voice answers and automatic audio question vocalization.
+- **Adaptive Follow-Up Questions:** Questions adapt to candidate responses based on technical depth, length, and resume background.
+- **Multi-Role Scenarios:** Practice technical, behavioral, and HR questions across Software Engineering, Data Science, Product Management, and Cloud roles.
+
+### 3. 👥 Interviewer Workspace & Candidate Evaluation Portal
+- **Role-Based Authorization:** Separate portals for **Students** and **Interviewers** with an administrator approval gate (`is_approved`) for verified evaluators.
+- **Interviewer Workspace (`/interviewer/dashboard`):** Schedule sessions, assign candidates from the roster, and curate questions from the question bank.
+- **Live Candidate Dossier & Evaluation Room (`/interviewer/session/<id>`):** Live review pane showing the candidate's academic background, parsed resume skills/projects, question rubrics, and a real-time scoring form (Technical 0-100, Communication 0-100, Overall 0-100, and meeting notes).
+- **Candidate Feedback Portal (`/my-interviews`):** Students can review assigned sessions, interviewer feedback, and evaluation scores to prepare for real campus interviews.
+
+### 4. 📄 Persistent Resume Intelligence
+- **Multi-Resume Storage:** Upload and manage multiple PDF resumes with permanent persistence in the database and filesystem.
+- **Automated Resume Parsing:** Extracts skills, projects, education, and target roles using `pypdf` and regex intelligence.
+- **Windows File-Locking Prevention:** Built-in memory buffering (`BytesIO`) ensures resumes can be viewed, downloaded, or deleted without file locking issues.
+- **Session Personalization:** Extracted resume skills and projects automatically seed candidate questions during mock interviews.
+
+### 5. 📊 5-Metric Performance Analytics & Practice Drills
+- **5 Evaluation Dimensions:** Relevance, Clarity, Communication, Fluency, and Technical Knowledge.
+- **Visual Analytics:** Interactive Chart.js radar charts and detailed score rationales ("Explain My Score").
+- **STAR Practice Drills:** Real-time evaluation of practice responses against Situation, Task, Action, and Result frameworks.
+- **Longitudinal Progress Tracking:** Compare Attempt 1 vs. Attempt 2 with exact score deltas and trajectory curves.
+
+---
+
+## 🎨 Modern EdTech Visual Identity
+
+The platform features a modern, accessible EdTech design:
+- **Palette:** Sky-blue background (`#f0f9ff`), vibrant cyan/blue primary accents (`#0284c7`, `#06b6d4`), and high-contrast navy typography (`#0f172a`).
+- **Layout:** Generous spacing, soft rounded cards (`14px` border-radius), floating accent badges, pill buttons, and responsive grid layouts.
+- **Clarity First:** Free of academic clutter, theoretical essays, and confusing disclaimers — every screen focuses on actionable practice and clear results.
+
+---
+
+## 📂 Project Structure
+
 ```
-RESUME ➔ TARGET ➔ INTERVIEW ➔ ANALYZE ➔ PREPARE ➔ PRACTICE ➔ NEXT INTERVIEW ➔ IMPROVE
-```
-
----
-
-## 🚀 How to Run the Web Application
-
-1. Open PowerShell or Command Prompt.
-2. Navigate to the project directory:
-   ```powershell
-   cd C:\Users\HP\.gemini\antigravity\scratch\ai_interview_analyzer
-   ```
-3. Start the Flask server:
-   ```powershell
-   python app.py
-   ```
-4. Open your web browser and visit:
-   ```
-   http://127.0.0.1:5000
-   ```
-
----
-
-## 🏗️ Architecture & Features Built
-
-| Feature / Page | Technical Details |
-| :--- | :--- |
-| **1. Landing & Concept (`/`)** | Modern UI following Section 24 design guidelines (light blue & soft purple accent, navy typography, clean cards). Outlines the academic FEP journey. |
-| **2. Candidate Profile (`/dashboard`)** | Candidate information, active resume status, best score, average performance, and past interview sessions. |
-| **3. Resume Parser (`/resume`)** | Uploads PDF resumes and extracts technical skills, education, and project titles using `pypdf` to personalize interview questions. |
-| **4. Setup Wizard (`/interview-setup`)** | Configures Industry (IT, Banking, Healthcare, E-Commerce, etc.), Role (Software Dev, Web Dev, Data Analyst, AI/ML, Cybersecurity), Type (HR, Technical, Role-based), and Difficulty. |
-| **5. Adaptive Interview Room (`/interview/<id>`)** | **Video Mode**: Live webcam preview.<br>**Audio Mode**: Speech-to-text dictation via the browser's Web Speech API + AI speech synthesis to vocalize questions aloud.<br>**Adaptive Logic**: Dynamically adjusts follow-up questions depending on answer length and depth. |
-| **6. AI Analysis Dashboard (`/result/<id>`)** | Evaluates answers across 5 core dimensions: **Communication, Relevance, Clarity, Fluency** (with filler word detection), and **Technical Knowledge**. Features interactive **"Explain My Score"** breakdown. |
-| **7. "Prepare for My Next Interview" (`/prepare/<id>`)** | Identifies lowest-scoring areas and automatically generates a targeted preparation curriculum using the **STAR methodology** (Situation, Task, Action, Result) with interactive practice drills. |
-| **8. Attempt Comparison (`/progress`)** | Compares **Attempt 1 vs Attempt 2** side-by-side with exact percentage deltas and improvement metrics. |
-
----
-
-## 📂 Project Directory Structure
-
-```
-ai_interview_analyzer/
-│── app.py                   # Main Flask routes & controllers
-│── requirements.txt         # Dependencies (Flask, pypdf, google-generativeai)
-│── seed_demo.py             # Pre-populates sample Attempt 1 data for immediate demo
-│── test_app.py              # Automated verification test suite for all routes
-│── interview_analyzer.db    # SQLite relational database
+AI-Interview-performance-Analyzer/
+├── app.py                      # Flask backend controller & RESTful API routes
+├── requirements.txt            # Python dependencies (Flask, pypdf, google-generativeai, pytest)
+├── .env.example                # Environment variable configuration template
+├── seed_demo.py                # Database seeder for demo accounts & Attempt 1 data
+├── test_app.py                 # Route status sanity test
+├── test_comprehensive.py       # Full pytest suite (10 end-to-end test cases)
+├── interview_analyzer.db       # Relational SQLite database
 │
 ├── database/
-│   └── db.py                # Schema for users, resumes, interviews, questions, answers, analysis, practice_plan
+│   └── db.py                   # DB connection, schema migrations, and 23 seed aptitude questions
+│
+├── migrations/
+│   └── 01_supabase_schema.sql  # Supabase PostgreSQL schema with RLS policies
 │
 ├── services/
-│   ├── ai_service.py        # Adaptive question generator & 5-metric evaluation engine
-│   ├── resume_service.py    # PDF resume text extraction & skill/project parser
-│   └── analysis_service.py  # Personalized preparation planner & attempt comparison
+│   ├── ai_service.py           # Gemini AI & rule-based question generator & 5-metric evaluator
+│   ├── resume_service.py       # PDF parser & technical skill/project extractor
+│   └── analysis_service.py     # Practice drill generator & attempt comparison engine
 │
 ├── static/
-│   ├── css/
-│   │   └── style.css        # Clean UI styling (Section 24 specification)
-│   └── js/
-│       └── interview.js     # Webcam preview, speech-to-text mic recording, timers
+│   └── css/
+│       └── style.css           # Modern EdTech design system (cyan accents & navy typography)
 │
 └── templates/
-    ├── base.html            # Common navigation header & footer
-    ├── index.html           # Landing page & How It Works
-    ├── dashboard.html       # Candidate profile & interview history
-    ├── resume.html          # PDF upload & extracted insights
-    ├── interview_setup.html # Setup wizard (Industry, Role, Type)
-    ├── interview.html       # Adaptive interview room (Split-screen Audio/Video)
-    ├── result.html          # AI Performance Analysis & "Explain My Score"
-    ├── preparation.html     # Personalized next-interview plan & STAR practice
-    ├── progress.html        # Longitudinal attempt comparison dashboard
-    └── login.html           # Authentication / demo candidate switch
+    ├── base.html               # Role-aware responsive navigation & footer
+    ├── index.html              # Modern landing page ("Prepare Smarter. Interview Better.")
+    ├── login.html              # Sign-in portal with 1-click demo logins
+    ├── register.html           # Student & Interviewer registration
+    ├── dashboard.html          # Student dashboard & readiness metrics
+    ├── aptitude_setup.html     # Aptitude practice room setup
+    ├── aptitude_test.html      # Timed aptitude test room with question palette
+    ├── aptitude_result.html    # Aptitude results & step-by-step explanations
+    ├── interview_setup.html    # AI Mock Interview configuration wizard
+    ├── interview.html          # Dual-participant room (Ava & Candidate + Audio/Video)
+    ├── result.html             # AI Performance Analysis & Radar Chart
+    ├── preparation.html        # Practice Recommendations & STAR drill sandbox
+    ├── resume.html             # My Resumes upload & preview gallery
+    ├── question_bank.html      # Question Bank catalog & CSV import
+    ├── progress.html           # Longitudinal attempt comparison & analytics
+    ├── interviewer_dashboard.html # Interviewer workspace & session creator
+    ├── interviewer_room.html   # Live interviewer evaluation room
+    └── student_interviews.html # Student portal for interviewer evaluations
 ```
 
 ---
 
-## 🛡️ Academic Project Limitation Notice
-*As mandated in Section 26 of the project specification:*
-> "The platform helps candidates become better prepared for their targeted interview by identifying weaknesses and providing personalized practice. It does not claim to make a candidate 100% ready or guarantee job selection, as real hiring outcomes depend on employer requirements, competition, and actual interview conditions."
+## 🚀 Getting Started
+
+### 1. Prerequisites
+- Python 3.10 or higher installed.
+
+### 2. Installation
+Clone the repository and enter the directory:
+```powershell
+git clone https://github.com/Prathameshkoli707/AI-Interview-performance-Analyzer.git
+cd AI-Interview-performance-Analyzer
+```
+
+Install the dependencies:
+```powershell
+pip install -r requirements.txt
+```
+
+### 3. Environment Configuration
+Create a `.env` file from the provided `.env.example`:
+```powershell
+cp .env.example .env
+```
+
+Configure your environment variables as needed:
+```ini
+FLASK_SECRET_KEY=dev-secret-key-replace-in-production-2026
+DB_MODE=sqlite
+GEMINI_API_KEY=your-gemini-api-key-here
+```
+*(Note: If `GEMINI_API_KEY` is not provided, the platform automatically activates its built-in rule-based evaluation engine and curated question bank.)*
+
+### 4. Database Setup & Seeding
+The database tables and seed questions are initialized automatically when the app runs. To seed the demo candidate and interviewer history:
+```powershell
+python seed_demo.py
+```
+
+### 5. Running the Application
+Start the Flask development server:
+```powershell
+python app.py
+```
+
+Access the application in your browser at:
+```
+http://127.0.0.1:5000
+```
+
+---
+
+## 🔑 Default Demo Accounts
+
+For instant evaluation, you can use the pre-configured credentials or the 1-click buttons on the login screen:
+
+| Role | Email | Password | Access Level |
+|---|---|---|---|
+| **Student** | `student@example.com` | `password123` | Dashboard, Resumes, Aptitude, AI Mock Interviews, Feedback |
+| **Interviewer** | `interviewer@example.com` | `interviewer123` | Interviewer Workspace, Candidate Roster, Live Scoring Room |
+
+---
+
+## 🧪 Automated Testing
+
+Run the full end-to-end test suite:
+
+```powershell
+# Run the 10-point comprehensive pytest test suite
+python -m pytest test_comprehensive.py -v
+
+# Run the lightweight route verification
+python test_app.py
+```
+
+### Test Coverage:
+1. `test_routes_status_200`: All public and authenticated routes render HTTP 200.
+2. `test_user_registration_and_login`: Student onboarding, password hashing, and session authentication.
+3. `test_complete_resume_lifecycle`: Upload, disk storage, database persistence, view/download, re-analysis, multi-resume management, user isolation, and deletion.
+4. `test_question_bank_add_and_filter`: Personal questions, category filtering, and rubrics.
+5. `test_csv_import_question_bank`: Bulk CSV importing with duplicate detection.
+6. `test_interview_lifecycle`: Adaptive question generation, answer submissions, composite scoring, and preparation recommendations.
+7. `test_practice_drill_evaluation`: Real-time STAR methodology evaluation.
+8. `test_aptitude_module_full_lifecycle`: Category selection, timed test room, answer submission, score calculation, and review.
+9. `test_interviewer_auth_and_dashboard`: Role protection and administrator verification gate.
+10. `test_interviewer_session_and_student_feedback`: Session creation, live evaluation submission, and student feedback viewing.
+
+---
+
+## 📜 License
+This project is open-source under the MIT License.

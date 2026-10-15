@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}Aptitude Test Results — AI Interview Performance Analyzer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="header-flex">
+        <div>
+            <div class="hero-badge-pill" style="margin-bottom: 0.5rem;">
+                <span>🎯 Assessment Performance Report</span>
+            </div>
+            <h1 class="page-title">Aptitude Test Results</h1>
+            <p class="page-subtitle">Review your score breakdown, time efficiency, and question-by-question verified solutions.</p>
+        </div>
+        <div class="header-actions">
+            <a href="{{ url_for('aptitude_setup_view') }}" class="btn-primary">Take Another Test</a>
+            <a href="{{ url_for('dashboard') }}" class="btn-outline">Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<!-- Score Summary Card -->
+<div class="card result-score-card">
+    <div class="result-score-grid">
+        <div class="score-circle-col">
+            <div class="score-radial-wrap {% if attempt.score_percent >= 70 %}high{% elif attempt.score_percent < 40 %}low{% else %}med{% endif %}">
+                <span class="score-radial-number">{{ attempt.score_percent }}%</span>
+                <span class="score-radial-label">Final Accuracy</span>
+            </div>
+        </div>
+
+        <div class="score-details-col">
+            <h2 class="result-verdict-title">
+                {% if attempt.score_percent >= 80 %}
+                    Outstanding Performance! Excellent Problem Solving.
+                {% elif attempt.score_percent >= 60 %}
+                    Good Effort! On Track for Campus/Corporate Aptitude Clears.
+                {% elif attempt.score_percent >= 40 %}
+                    Moderate Accuracy. Focused practice recommended in weak areas.
+                {% else %}
+                    Needs Improvement. Review the step-by-step explanations below.
+                {% endif %}
+            </h2>
+
+            <div class="result-metric-pills">
+                <div class="metric-pill">
+                    <span class="pill-title">Category</span>
+                    <strong class="pill-value">{{ attempt.category }}</strong>
+                </div>
+                <div class="metric-pill">
+                    <span class="pill-title">Correct Answers</span>
+                    <strong class="pill-value text-success">{{ attempt.correct_count }} / {{ attempt.total_questions }}</strong>
+                </div>
+                <div class="metric-pill">
+                    <span class="pill-title">Incorrect</span>
+                    <strong class="pill-value text-danger">{{ attempt.incorrect_count }}</strong>
+                </div>
+                <div class="metric-pill">
+                    <span class="pill-title">Unanswered</span>
+                    <strong class="pill-value text-muted">{{ attempt.unanswered_count }}</strong>
+                </div>
+                <div class="metric-pill">
+                    <span class="pill-title">Time Spent</span>
+                    <strong class="pill-value">{{ (attempt.time_taken_seconds // 60) }}m {{ (attempt.time_taken_seconds % 60) }}s</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Question-by-Question Solution Review -->
+<div class="solutions-section" style="margin-top: 2rem;">
+    <div class="solutions-header-flex">
+        <div>
+            <h3 class="section-title">Step-by-Step Question Review & Solutions</h3>
+            <p class="card-subtitle">Examine the verified correct options and mathematical/logical explanations.</p>
+        </div>
+    </div>
+
+    <div class="solutions-list">
+        {% for q in questions %}
+            <div class="card solution-card {% if q.is_correct %}card-correct{% elif q.is_unanswered %}card-unanswered{% else %}card-incorrect{% endif %}">
+                <div class="solution-card-header">
+                    <div class="solution-meta">
+                        <span class="badge badge-accent">Q{{ loop.index }} • {{ q.topic }}</span>
+                        <span class="badge">{{ q.difficulty }}</span>
+                    </div>
+                    <div class="solution-status-badge">
+                        {% if q.is_correct %}
+                            <span class="badge badge-success">✓ Correct (+1)</span>
+                        {% elif q.is_unanswered %}
+                            <span class="badge badge-warning">⚠️ Unanswered (0)</span>
+                        {% else %}
+                            <span class="badge badge-danger">✕ Incorrect (0)</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <h4 class="solution-question-text">{{ q.question_text }}</h4>
+
+                <!-- Options Grid -->
+                <div class="solution-options-grid">
+                    {% for opt in q.options %}
+                        <div class="solution-opt-box 
+                            {% if opt.key == q.correct_option %}opt-correct-answer{% endif %}
+                            {% if opt.key == q.user_choice and not q.is_correct %}opt-wrong-chosen{% endif %}
+                        ">
+                            <span class="opt-key">{{ opt.key }}</span>
+                            <span class="opt-text">{{ opt.text }}</span>
+                            {% if opt.key == q.correct_option %}
+                                <span class="opt-tag tag-correct">✓ Correct Key</span>
+                            {% elif opt.key == q.user_choice %}
+                                <span class="opt-tag tag-wrong">Your Choice</span>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Explanation Box -->
+                <div class="solution-explanation-box">
+                    <div class="expl-title">
+                        <span>💡 Verified Explanation & Logic:</span>
+                    </div>
+                    <p class="expl-text">{{ q.explanation }}</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div style="text-align: center; margin: 2rem 0;">
+        <a href="{{ url_for('aptitude_setup_view') }}" class="btn-primary pill-btn" style="padding: 0.85rem 2rem !important; font-size: 1rem !important;">
+            Practice More Questions →
+        </a>
+    </div>
+</div>
+
+<style>
+.result-score-card {
+    padding: 2.25rem;
+    background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+    border: 1px solid #bae6fd;
+}
+.result-score-grid {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 2rem;
+    align-items: center;
+}
+.score-radial-wrap {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 8px solid;
+    background: #ffffff;
+    box-shadow: 0 8px 25px rgba(2, 132, 199, 0.12);
+}
+.score-radial-wrap.high { border-color: #10b981; color: #10b981; }
+.score-radial-wrap.med { border-color: #f59e0b; color: #f59e0b; }
+.score-radial-wrap.low { border-color: #ef4444; color: #ef4444; }
+
+.score-radial-number {
+    font-size: 2.4rem;
+    font-weight: 800;
+    line-height: 1;
+}
+.score-radial-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 0.25rem;
+}
+.result-verdict-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--navy);
+    margin-bottom: 1.25rem;
+    line-height: 1.3;
+}
+.result-metric-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+.metric-pill {
+    background: #ffffff;
+    padding: 0.55rem 0.95rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 110px;
+}
+.pill-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+.pill-value {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--navy);
+}
+.solutions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-top: 1rem;
+}
+.solution-card {
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+    border-left: 5px solid;
+}
+.card-correct { border-left-color: #10b981; }
+.card-incorrect { border-left-color: #ef4444; }
+.card-unanswered { border-left-color: #f59e0b; }
+
+.solution-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+.solution-meta {
+    display: flex;
+    gap: 0.5rem;
+}
+.solution-question-text {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--navy);
+    line-height: 1.45;
+    margin-bottom: 1.25rem;
+}
+.solution-options-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+.solution-opt-box {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.75rem 0.95rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: #ffffff;
+    font-size: 0.9rem;
+    position: relative;
+}
+.opt-key {
+    font-weight: 800;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    flex-shrink: 0;
+}
+.opt-correct-answer {
+    background: #ecfdf5;
+    border-color: #10b981;
+    font-weight: 600;
+}
+.opt-correct-answer .opt-key {
+    background: #10b981;
+    color: #ffffff;
+}
+.opt-wrong-chosen {
+    background: #fef2f2;
+    border-color: #ef4444;
+}
+.opt-wrong-chosen .opt-key {
+    background: #ef4444;
+    color: #ffffff;
+}
+.opt-tag {
+    margin-left: auto;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 9999px;
+}
+.tag-correct { background: #d1fae5; color: #065f46; }
+.tag-wrong { background: #fee2e2; color: #991b1b; }
+
+.solution-explanation-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+}
+.expl-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 0.35rem;
+}
+.expl-text {
+    font-size: 0.9rem;
+    color: var(--slate);
+    line-height: 1.5;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .result-score-grid {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+    .score-circle-col {
+        display: flex;
+        justify-content: center;
+    }
+    .solution-options-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

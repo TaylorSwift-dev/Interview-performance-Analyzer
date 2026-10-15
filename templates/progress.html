@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block title %}My Progress — AI Interview Performance Analyzer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="header-flex">
+        <div>
+            <h1 class="page-title">My Progress</h1>
+            <p class="page-subtitle">Track your performance over time, compare interview attempts, and review targeted practice.</p>
+        </div>
+        <div class="header-actions">
+            <a href="{{ url_for('interview_setup') }}" class="btn-primary">Start New Interview</a>
+            <a href="{{ url_for('dashboard') }}" class="btn-outline">Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<!-- Comparison Summary Banner (If 2 or more completed attempts exist) -->
+{% if comparison %}
+    <div class="card comparison-banner-card">
+        <div class="banner-flex">
+            <div class="banner-stat">
+                <span class="banner-label">Overall Improvement</span>
+                <div class="banner-delta {% if comparison.improved %}delta-positive{% else %}delta-negative{% endif %}">
+                    {% if comparison.overall_delta > 0 %}+{% endif %}{{ comparison.overall_delta }}%
+                </div>
+            </div>
+
+            <div class="banner-info">
+                <h3 class="banner-title">{{ comparison.verdict }}</h3>
+                <p class="banner-sub">
+                    Comparing <strong>Attempt 1 ({{ comparison.attempt_1_date }})</strong> vs <strong>Latest Attempt ({{ comparison.attempt_2_date }})</strong>.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Side-by-Side Metric Delta Table & Chart -->
+    <div class="grid-2" style="margin-top: 1.5rem;">
+        <!-- Delta Comparison Table -->
+        <div class="card">
+            <h3 class="section-title">Skill-Wise Score Comparison</h3>
+            <p class="card-subtitle">Exact score changes across core dimensions.</p>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Dimension</th>
+                            <th>Attempt 1</th>
+                            <th>Latest</th>
+                            <th>Change</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in comparison.metric_deltas %}
+                            <tr>
+                                <td><strong>{{ row.label }}</strong></td>
+                                <td>{{ row.attempt_1 }}%</td>
+                                <td>{{ row.attempt_2 }}%</td>
+                                <td>
+                                    <span class="badge {% if row.delta > 0 %}badge-success{% elif row.delta < 0 %}badge-danger{% else %}badge-primary{% endif %}">
+                                        {% if row.delta > 0 %}+{% endif %}{{ row.delta }}%
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Trajectory Chart -->
+        <div class="card">
+            <h3 class="section-title">Visual Score Comparison</h3>
+            <p class="card-subtitle">Side-by-side comparison between Attempt 1 and Latest Attempt.</p>
+            <div style="position: relative; height: 260px;">
+                <canvas id="comparisonBarChart"></canvas>
+            </div>
+        </div>
+    </div>
+{% elif interviews|length == 1 %}
+    <!-- Single Attempt Banner: Clear helper text without fake comparisons -->
+    <div class="card single-attempt-card">
+        <div class="single-flex">
+            <div>
+                <span class="badge badge-primary">First Interview Completed</span>
+                <h3 class="single-title">Great start! You completed your first mock interview.</h3>
+                <p class="single-text">
+                    Complete one more interview to unlock side-by-side attempt comparison, progress trajectory charts, and score improvement deltas.
+                </p>
+            </div>
+            <a href="{{ url_for('interview_setup') }}" class="btn-primary">Start Attempt 2 →</a>
+        </div>
+    </div>
+{% else %}
+    <div class="card empty-state">
+        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📊</div>
+        <h4>No Completed Interviews Yet</h4>
+        <p>Complete your first mock interview to start tracking scores, skill improvements, and performance trajectories.</p>
+        <a href="{{ url_for('interview_setup') }}" class="btn-primary" style="margin-top: 1rem;">Start Your First Interview</a>
+    </div>
+{% endif %}
+
+<!-- Recommended Practice Section (Connected to Real Plans) -->
+{% if plans %}
+    <div class="card" style="margin-top: 2rem;">
+        <h3 class="section-title">Recommended Practice & Weak Areas</h3>
+        <p class="card-subtitle">Practice activities generated from your actual evaluation results.</p>
+        <div class="plans-grid grid-2" style="margin-top: 1rem;">
+            {% for plan in plans %}
+                <div class="plan-sub-card">
+                    <div class="plan-sub-header">
+                        <strong>{{ plan.weak_area }}</strong>
+                        <span class="badge {% if plan.status == 'completed' %}badge-success{% else %}badge-warning{% endif %}">
+                            {{ plan.status|title }}
+                        </span>
+                    </div>
+                    <p class="plan-sub-text">{{ plan.recommendation }}</p>
+                    {% if interviews %}
+                        <a href="{{ url_for('prepare_next', interview_id=interviews[0].interview_id) }}" class="btn-outline-sm" style="margin-top: 0.5rem; display: inline-block;">
+                            Practice This Skill
+                        </a>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
+
+<!-- Full History Timeline -->
+{% if interviews %}
+    <div class="card" style="margin-top: 2rem;">
+        <h3 class="section-title">All Completed Interview Sessions</h3>
+        <p class="card-subtitle">Full record of all evaluated interview attempts.</p>
+        <div class="table-responsive" style="margin-top: 0.75rem;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Attempt</th>
+                        <th>Target Role</th>
+                        <th>Type</th>
+                        <th>Difficulty</th>
+                        <th>Date</th>
+                        <th>Overall Score</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for iv in interviews %}
+                        <tr>
+                            <td>#{{ iv.interview_id }}</td>
+                            <td><strong>{{ iv.job_role }}</strong></td>
+                            <td><span class="badge">{{ iv.interview_type }}</span></td>
+                            <td><span class="badge">{{ iv.difficulty }}</span></td>
+                            <td class="table-sub">{{ iv.date }}</td>
+                            <td><strong class="score-highlight">{{ iv.overall_score }}%</strong></td>
+                            <td>
+                                <a href="{{ url_for('interview_result', interview_id=iv.interview_id) }}" class="btn-outline-sm">View Feedback</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Aptitude Practice Longitudinal Record -->
+<div class="card" style="margin-top: 1.5rem;">
+    <div class="card-header-flex">
+        <div>
+            <h3 class="section-title">Aptitude Test Records</h3>
+            <p class="card-subtitle">Comprehensive history of timed tests and practice sessions.</p>
+        </div>
+        <a href="{{ url_for('aptitude_setup_view') }}" class="btn-primary-sm">+ Practice Aptitude</a>
+    </div>
+
+    {% if aptitude_attempts %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Mode</th>
+                        <th>Difficulty</th>
+                        <th>Score %</th>
+                        <th>Correct / Total</th>
+                        <th>Time</th>
+                        <th>Date</th>
+                        <th>Solutions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for att in aptitude_attempts %}
+                        <tr>
+                            <td><strong>{{ att.category }}</strong></td>
+                            <td><span class="badge">{{ att.mode|title }}</span></td>
+                            <td><span class="badge">{{ att.difficulty }}</span></td>
+                            <td>
+                                <strong class="score-highlight {% if att.score_percent >= 70 %}text-success{% elif att.score_percent < 40 %}text-danger{% endif %}">
+                                    {{ att.score_percent }}%
+                                </strong>
+                            </td>
+                            <td>{{ att.correct_count }} / {{ att.total_questions }}</td>
+                            <td class="table-sub">{{ (att.time_taken_seconds // 60) }}m {{ (att.time_taken_seconds % 60) }}s</td>
+                            <td class="table-sub">{{ att.submitted_at[:16] }}</td>
+                            <td>
+                                <a href="{{ url_for('aptitude_result_view', attempt_id=att.attempt_id) }}" class="btn-outline-sm">Review Solutions</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state" style="padding: 2rem 1rem;">
+            <p style="color: var(--muted); margin: 0;">No aptitude practice records yet. <a href="{{ url_for('aptitude_setup_view') }}">Start an aptitude test</a> to measure your quantitative, logical, and verbal skills.</p>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+{% if comparison %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const ctx = document.getElementById('comparisonBarChart').getContext('2d');
+    
+    const labels = [{% for r in comparison.metric_deltas %}'{{ r.label }}',{% endfor %}];
+    const attempt1Data = [{% for r in comparison.metric_deltas %}{{ r.attempt_1 }},{% endfor %}];
+    const attempt2Data = [{% for r in comparison.metric_deltas %}{{ r.attempt_2 }},{% endfor %}];
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Attempt 1',
+                    data: attempt1Data,
+                    backgroundColor: 'rgba(148, 163, 184, 0.7)',
+                    borderRadius: 4
+                },
+                {
+                    label: 'Latest Attempt',
+                    data: attempt2Data,
+                    backgroundColor: 'rgba(99, 102, 241, 0.9)',
+                    borderRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: { stepSize: 20 }
+                }
+            },
+            plugins: {
+                legend: { position: 'top' }
+            }
+        }
+    });
+});
+</script>
+{% endif %}
+
+<style>
+.comparison-banner-card {
+    background: linear-gradient(135deg, #f8fafc, #eff6ff);
+    border-left: 5px solid var(--primary);
+    padding: 1.75rem 2rem;
+}
+.banner-flex {
+    display: flex;
+    align-items: center;
+    gap: 2.5rem;
+    flex-wrap: wrap;
+}
+.banner-stat {
+    text-align: center;
+}
+.banner-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+}
+.banner-delta {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1.1;
+}
+.delta-positive { color: #059669; }
+.delta-negative { color: #dc2626; }
+.banner-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 0.35rem;
+}
+.banner-sub {
+    font-size: 0.92rem;
+    color: var(--muted);
+}
+.single-attempt-card {
+    padding: 2rem;
+    border-left: 5px solid var(--primary-light);
+    background: #f8fafc;
+}
+.single-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+.single-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin: 0.5rem 0 0.25rem;
+}
+.single-text {
+    font-size: 0.92rem;
+    color: var(--muted);
+}
+.plan-sub-card {
+    background: var(--bg-page);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+}
+.plan-sub-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.35rem;
+    font-size: 0.95rem;
+    color: var(--navy);
+}
+.plan-sub-text {
+    font-size: 0.88rem;
+    color: var(--slate);
+    line-height: 1.4;
+}
+</style>
+{% endblock %}

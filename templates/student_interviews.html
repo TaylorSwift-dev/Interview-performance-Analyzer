@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}My Interviewer Sessions — AI Interview Performance Analyzer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="header-flex">
+        <div>
+            <div class="hero-badge-pill" style="margin-bottom: 0.5rem;">
+                <span>💼 Professional Mock Sessions</span>
+            </div>
+            <h1 class="page-title">My Assigned Interviewer Sessions</h1>
+            <p class="page-subtitle">Track mock sessions scheduled with professional interviewers and review detailed feedback.</p>
+        </div>
+        <div class="header-actions">
+            <a href="{{ url_for('interview_setup') }}" class="btn-primary">+ Practice with AI</a>
+            <a href="{{ url_for('dashboard') }}" class="btn-outline">Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<!-- Sessions List Card -->
+<div class="card">
+    <h3 class="section-title">Interviewer-Led Practice Sessions</h3>
+    <p class="card-subtitle" style="margin-bottom: 1.25rem;">Live scheduled sessions and feedback from technical interviewers.</p>
+
+    {% if sessions %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Title & Role</th>
+                        <th>Interviewer</th>
+                        <th>Type & Level</th>
+                        <th>Scheduled</th>
+                        <th>Status</th>
+                        <th>Score</th>
+                        <th>Feedback</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in sessions %}
+                        <tr>
+                            <td>
+                                <strong>{{ s.title }}</strong>
+                                <span class="table-sub">{{ s.job_role }}</span>
+                            </td>
+                            <td>
+                                <strong>{{ s.interviewer_name }}</strong>
+                                <span class="table-sub">{{ s.interviewer_email }}</span>
+                            </td>
+                            <td>
+                                <span class="badge">{{ s.interview_type }}</span>
+                                <span class="badge">{{ s.difficulty }}</span>
+                            </td>
+                            <td class="table-sub">{{ s.scheduled_time }}</td>
+                            <td>
+                                <span class="badge {% if s.status == 'completed' %}badge-success{% else %}badge-warning{% endif %}">
+                                    {{ s.status|title }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if s.status == 'completed' and s.overall_score > 0 %}
+                                    <strong class="score-highlight">{{ s.overall_score }}%</strong>
+                                {% else %}
+                                    <span class="table-sub">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if s.status == 'completed' and s.interviewer_feedback %}
+                                    <button type="button" class="btn-outline-sm" onclick="showFeedbackModal('{{ s.interviewer_name|escape }}', '{{ s.overall_score }}', '{{ s.technical_score }}', '{{ s.communication_score }}', '{{ s.interviewer_feedback|escape }}')">
+                                        View Feedback
+                                    </button>
+                                {% else %}
+                                    <span class="table-sub">Awaiting Conduction</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state" style="padding: 2.5rem 1rem;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📅</div>
+            <h4>No Interviewer Sessions Assigned Yet</h4>
+            <p>You can practice anytime with Ava (AI Interviewer) or check back when a technical interviewer schedules a session with you.</p>
+            <a href="{{ url_for('interview_setup') }}" class="btn-primary" style="margin-top: 1rem; display: inline-block;">
+                Start AI Mock Interview Now
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Modal: View Feedback -->
+<div id="feedbackModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-dialog card">
+        <div class="modal-header">
+            <h3>Interviewer Feedback & Scores</h3>
+            <button type="button" class="modal-close-btn" onclick="toggleModal('feedbackModal')">×</button>
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+            <p style="margin: 0 0 0.5rem; font-size: 0.9rem; color: var(--muted);">Evaluated by: <strong id="modalInterviewerName" style="color: var(--navy);"></strong></p>
+            <div style="display: flex; gap: 0.75rem; margin-bottom: 1.25rem;">
+                <div class="stat-card" style="padding: 0.75rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--border); flex: 1;">
+                    <span style="font-size: 0.72rem; text-transform: uppercase; color: var(--muted); font-weight: 700; display: block;">Overall</span>
+                    <strong id="modalOverallScore" style="font-size: 1.3rem; color: var(--primary);"></strong>%
+                </div>
+                <div class="stat-card" style="padding: 0.75rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--border); flex: 1;">
+                    <span style="font-size: 0.72rem; text-transform: uppercase; color: var(--muted); font-weight: 700; display: block;">Technical</span>
+                    <strong id="modalTechScore" style="font-size: 1.3rem; color: var(--navy);"></strong>%
+                </div>
+                <div class="stat-card" style="padding: 0.75rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--border); flex: 1;">
+                    <span style="font-size: 0.72rem; text-transform: uppercase; color: var(--muted); font-weight: 700; display: block;">Communication</span>
+                    <strong id="modalCommScore" style="font-size: 1.3rem; color: var(--navy);"></strong>%
+                </div>
+            </div>
+
+            <h4 style="font-size: 1rem; color: var(--navy); margin-bottom: 0.4rem;">Detailed Recommendations:</h4>
+            <div id="modalFeedbackText" style="padding: 1rem; background: var(--bg-page); border-radius: var(--radius-md); border: 1px solid var(--border); font-size: 0.9rem; color: var(--slate); line-height: 1.5; white-space: pre-wrap;"></div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end;">
+            <button type="button" class="btn-primary" onclick="toggleModal('feedbackModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function showFeedbackModal(name, overall, tech, comm, feedback) {
+    document.getElementById('modalInterviewerName').innerText = name;
+    document.getElementById('modalOverallScore').innerText = overall;
+    document.getElementById('modalTechScore').innerText = tech;
+    document.getElementById('modalCommScore').innerText = comm;
+    document.getElementById('modalFeedbackText').innerText = feedback;
+    document.getElementById('feedbackModal').style.display = 'flex';
+}
+function toggleModal(id) {
+    const el = document.getElementById(id);
+    el.style.display = (el.style.display === 'none' || !el.style.display) ? 'flex' : 'none';
+}
+</script>
+
+<style>
+.modal-backdrop {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+.modal-dialog {
+    max-width: 580px;
+    width: 100%;
+    padding: 2rem;
+    background: #ffffff;
+    border-radius: var(--radius-lg);
+}
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+}
+.modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.6rem;
+    cursor: pointer;
+    color: var(--muted);
+}
+</style>
+{% endblock %}

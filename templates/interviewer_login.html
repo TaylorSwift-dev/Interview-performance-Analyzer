@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Interviewer Login — InterviewPrep AI{% endblock %}
+
+{% block content %}
+<div class="auth-page-container">
+    <!-- Left Showcase Panel -->
+    <div class="auth-showcase-panel">
+        <div class="auth-brand-tag">
+            <span class="logo-badge">💼</span>
+            <span>InterviewPrep AI • Interviewer Portal</span>
+        </div>
+
+        <h1 class="auth-showcase-title">Interviewer Workspace</h1>
+        <p class="auth-showcase-desc">
+            Conduct realistic mock interviews, review candidate dossiers, and provide structured 0–100 evaluations.
+        </p>
+
+        <!-- CSS Study/Evaluation Card -->
+        <div class="css-study-art-card">
+            <div class="css-art-header">
+                <div class="css-art-icon-pill">📋</div>
+                <div>
+                    <h4 style="color: var(--dark-text); font-size: 0.95rem; font-weight: 800;">Evaluation Console</h4>
+                    <p style="color: var(--muted); font-size: 0.8rem;">Evaluate technical and behavioral competencies</p>
+                </div>
+            </div>
+
+            <div class="css-art-badges-row">
+                <span class="css-art-badge-tag">👤 Candidate Dossier</span>
+                <span class="css-art-badge-tag">📊 Live 0-100 Scoring</span>
+                <span class="css-art-badge-tag">📝 Structured Feedback</span>
+                <span class="css-art-badge-tag">🔍 Resume Inspection</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Panel: Interviewer Login Card -->
+    <div class="auth-form-card">
+        <span class="auth-pill-badge" style="background: var(--lavender); color: var(--primary);">Interviewer Portal</span>
+        <h2 style="margin-top: 0.35rem;">Log in as Interviewer</h2>
+        <p class="auth-form-subtitle">Enter your verified interviewer credentials.</p>
+
+        <form id="intLoginForm" action="{{ url_for('interviewer_login') }}" method="POST">
+            <div class="form-group-pastel">
+                <label for="int_email" class="input-label-styled">Email address</label>
+                <div class="input-icon-wrapper">
+                    <span class="input-prefix-icon">✉️</span>
+                    <input type="email" id="int_email" name="email" class="pastel-input" placeholder="e.g. interviewer@example.com" value="interviewer@example.com" required>
+                </div>
+            </div>
+
+            <div class="form-group-pastel">
+                <label for="int_password" class="input-label-styled">Password</label>
+                <div class="input-icon-wrapper">
+                    <span class="input-prefix-icon">🔒</span>
+                    <input type="password" id="int_password" name="password" class="pastel-input" placeholder="Enter password" value="interviewer123" required>
+                    <button type="button" class="input-suffix-toggle" onclick="toggleIntPassword()" title="Toggle password visibility">
+                        <span id="intEyeIcon">👁️</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="auth-links-row">
+                <a href="{{ url_for('forgot_password') }}" class="pastel-link">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="btn-pastel-purple full-width">
+                Log In to Interviewer Workspace
+            </button>
+        </form>
+
+        <div class="auth-divider">
+            <span>or instant demo access</span>
+        </div>
+
+        <div class="demo-login-group">
+            <button type="button" class="btn-demo-choice" onclick="fillIntDemo()">
+                <span>💼</span> Fill Verified Interviewer Demo (Dr. Marcus Vance)
+            </button>
+        </div>
+
+        <div class="auth-bottom-switch" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1.5rem;">
+            <div>
+                Need interviewer access? <a href="{{ url_for('interviewer_register') }}" class="pastel-link" style="font-weight: 700;">Request an Account →</a>
+            </div>
+            <div style="font-size: 0.82rem; color: var(--muted);">
+                Looking for student practice? <a href="{{ url_for('login') }}" class="pastel-link">Student Login</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleIntPassword() {
+    const pw = document.getElementById('int_password');
+    const eye = document.getElementById('intEyeIcon');
+    if (pw.type === 'password') {
+        pw.type = 'text';
+        eye.innerText = '🙈';
+    } else {
+        pw.type = 'password';
+        eye.innerText = '👁️';
+    }
+}
+
+function fillIntDemo() {
+    document.getElementById('int_email').value = 'interviewer@example.com';
+    document.getElementById('int_password').value = 'interviewer123';
+    document.getElementById('intLoginForm').submit();
+}
+</script>
+{% endblock %}

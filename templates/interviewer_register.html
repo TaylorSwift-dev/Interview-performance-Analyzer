@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Request Interviewer Access — InterviewPrep AI{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper" style="max-width: 600px;">
+    <div class="auth-card-clean">
+        <div class="auth-header">
+            <span class="auth-pill-badge" style="background: var(--lavender); color: var(--primary);">Interviewer Portal</span>
+            <h1 class="auth-card-title">Request Interviewer Access</h1>
+            <p class="auth-card-subtitle">Apply for a verified interviewer account to schedule sessions and evaluate candidates.</p>
+        </div>
+
+        <form action="{{ url_for('interviewer_register') }}" method="POST">
+            <div class="grid-2">
+                <div class="form-group-pastel">
+                    <label for="name" class="input-label-styled">Full Name *</label>
+                    <div class="input-icon-wrapper">
+                        <span class="input-prefix-icon">👤</span>
+                        <input type="text" id="name" name="name" class="pastel-input" placeholder="e.g. Dr. Marcus Vance" value="{{ name or '' }}" required>
+                    </div>
+                </div>
+
+                <div class="form-group-pastel">
+                    <label for="email" class="input-label-styled">Professional Email *</label>
+                    <div class="input-icon-wrapper">
+                        <span class="input-prefix-icon">✉️</span>
+                        <input type="email" id="email" name="email" class="pastel-input" placeholder="e.g. m.vance@techcorp.com" value="{{ email or '' }}" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group-pastel">
+                    <label for="password" class="input-label-styled">Password *</label>
+                    <div class="input-icon-wrapper">
+                        <span class="input-prefix-icon">🔒</span>
+                        <input type="password" id="password" name="password" class="pastel-input" placeholder="Minimum 6 characters" minlength="6" required>
+                    </div>
+                </div>
+
+                <div class="form-group-pastel">
+                    <label for="confirm_password" class="input-label-styled">Confirm Password *</label>
+                    <div class="input-icon-wrapper">
+                        <span class="input-prefix-icon">🔒</span>
+                        <input type="password" id="confirm_password" name="confirm_password" class="pastel-input" placeholder="Repeat password" minlength="6" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group-pastel">
+                <label for="organization" class="input-label-styled">Organization / Company / University *</label>
+                <div class="input-icon-wrapper">
+                    <span class="input-prefix-icon">🏢</span>
+                    <input type="text" id="organization" name="organization" class="pastel-input" placeholder="e.g. Acme Tech Innovations / State University" required>
+                </div>
+            </div>
+
+            <div class="form-group-pastel">
+                <label for="technical_skills" class="input-label-styled">Interview Domain / Specialization</label>
+                <div class="input-icon-wrapper">
+                    <span class="input-prefix-icon">⚡</span>
+                    <input type="text" id="technical_skills" name="technical_skills" class="pastel-input" placeholder="e.g. Distributed Systems, Backend Architecture, Data Structures">
+                </div>
+            </div>
+
+            <div style="margin: 1rem 0; padding: 0.85rem 1rem; background: var(--lavender-light); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 0.84rem; color: var(--slate);">
+                ℹ️ <strong>Security Verification Notice:</strong> Interviewer accounts undergo verification before session assignment and candidate evaluation privileges are activated.
+            </div>
+
+            <button type="submit" class="btn-pastel-purple full-width" style="margin-top: 0.5rem;">
+                Submit Access Request →
+            </button>
+        </form>
+
+        <div class="auth-footer-links" style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <div>
+                Already have an interviewer account? <a href="{{ url_for('interviewer_login') }}" class="pastel-link" style="font-weight: 700;">Sign in here</a>
+            </div>
+            <div style="font-size: 0.82rem; color: var(--muted);">
+                Are you a candidate looking to practice? <a href="{{ url_for('register') }}" class="pastel-link">Student Registration</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

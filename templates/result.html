@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+
+{% block title %}Interview Performance Analysis #{{ interview.interview_id }} — AI Interview Performance Analyzer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="header-flex">
+        <div>
+            <span class="badge badge-success">Completed Session</span>
+            <h1 class="page-title">My Interview Results</h1>
+            <p class="page-subtitle">
+                {{ interview.job_role }} • {{ interview.interview_type }} • Attempted on {{ interview.date }}
+            </p>
+        </div>
+        <div class="header-actions">
+            <a href="{{ url_for('prepare_next', interview_id=interview.interview_id) }}" class="btn-primary">
+                Prepare for My Next Interview →
+            </a>
+            <a href="{{ url_for('dashboard') }}" class="btn-outline">Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<!-- Score Summary Cards -->
+<div class="grid-4" style="margin-bottom: 1.5rem;">
+    <div class="card score-highlight-card">
+        <span class="score-card-label">Overall Performance</span>
+        <div class="big-score">{{ scores.overall }}<span class="unit">%</span></div>
+        <p class="score-card-sub">Weighted 5-Metric Composite</p>
+    </div>
+
+    <div class="card">
+        <span class="score-card-label">Technical Depth</span>
+        <div class="metric-score">{{ scores.technical }}%</div>
+        <div class="score-bar"><div class="score-bar-fill" style="width: {{ scores.technical }}%;"></div></div>
+    </div>
+
+    <div class="card">
+        <span class="score-card-label">Communication</span>
+        <div class="metric-score">{{ scores.communication }}%</div>
+        <div class="score-bar"><div class="score-bar-fill" style="width: {{ scores.communication }}%;"></div></div>
+    </div>
+
+    <div class="card">
+        <span class="score-card-label">Clarity & Structure</span>
+        <div class="metric-score">{{ scores.clarity }}%</div>
+        <div class="score-bar"><div class="score-bar-fill" style="width: {{ scores.clarity }}%;"></div></div>
+    </div>
+</div>
+
+<!-- Chart & Dimensional Breakdown -->
+<div class="grid-2" style="margin-bottom: 2rem;">
+    <!-- Chart.js Visualization -->
+    <div class="card">
+        <h3 class="card-section-title">Competency Evaluation Radar</h3>
+        <p class="card-subtitle">Distribution of scores across core hiring dimensions.</p>
+        <div class="chart-container" style="position: relative; height: 280px;">
+            <canvas id="scoresRadarChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Strengths & Weaknesses Breakdown -->
+    <div class="card">
+        <h3 class="card-section-title">Key Strengths & Growth Areas</h3>
+        <div class="sw-block">
+            <h4 class="sw-title green-title">✓ Demonstrated Strengths</h4>
+            <ul class="sw-list green-list">
+                {% for st in strengths %}
+                    <li>{{ st }}</li>
+                {% else %}
+                    <li>Addressed the core premises of the interview questions directly.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="sw-block" style="margin-top: 1.25rem;">
+            <h4 class="sw-title red-title">⚠ Areas Needing Improvement</h4>
+            <ul class="sw-list red-list">
+                {% for wk in weaknesses %}
+                    <li>{{ wk }}</li>
+                {% else %}
+                    <li>Incorporate more quantitative metrics and architectural constraints into your answers.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Question-by-Question Detailed Breakdown -->
+<div class="card" style="margin-bottom: 2rem;">
+    <h3 class="card-section-title">Question-by-Question Detailed Feedback</h3>
+    <p class="card-subtitle">Review each response, score breakdowns, and transparent scoring explanations.</p>
+
+    <div class="turns-accordion">
+        {% for turn in detailed_turns %}
+            <div class="turn-item">
+                <div class="turn-header" onclick="toggleTurn('turn_{{ turn.order }}')">
+                    <div class="turn-title-meta">
+                        <span class="badge badge-primary">Q{{ turn.order }}</span>
+                        <strong class="turn-q-text">{{ turn.question }}</strong>
+                    </div>
+                    <div class="turn-badges">
+                        <span class="badge">Tech: {{ turn.technical }}%</span>
+                        <span class="badge">Comm: {{ turn.communication }}%</span>
+                        <span class="badge">Rel: {{ turn.relevance }}%</span>
+                        <span class="accordion-arrow">▼</span>
+                    </div>
+                </div>
+
+                <div id="turn_{{ turn.order }}" class="turn-body" style="display: {% if loop.first %}block{% else %}none{% endif %};">
+                    <div class="candidate-answer-box">
+                        <strong>Your Response:</strong>
+                        <p>{{ turn.answer }}</p>
+                    </div>
+
+                    <div class="ai-feedback-box">
+                        <strong>AI Evaluator Feedback:</strong>
+                        <p>{{ turn.feedback }}</p>
+                    </div>
+
+                    {% if turn.explain %}
+                        <div class="explain-scores-box">
+                            <strong>"Explain My Score" Breakdown:</strong>
+                            <div class="explain-grid">
+                                <div><strong>Relevance:</strong> {{ turn.explain.relevance }}</div>
+                                <div><strong>Clarity:</strong> {{ turn.explain.clarity }}</div>
+                                <div><strong>Communication:</strong> {{ turn.explain.communication }}</div>
+                                <div><strong>Fluency:</strong> {{ turn.explain.fluency }}</div>
+                                <div><strong>Technical:</strong> {{ turn.explain.technical }}</div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Prepare Call-to-Action Card -->
+<div class="cta-prepare-card card">
+    <div class="cta-content">
+        <h3>Turn These Insights Into High Performance</h3>
+        <p>Our continuous improvement pipeline has generated targeted STAR practice drills specifically for your lowest scoring metric.</p>
+    </div>
+    <a href="{{ url_for('prepare_next', interview_id=interview.interview_id) }}" class="btn-primary">
+        Launch Targeted Practice Plan →
+    </a>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function toggleTurn(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+    }
+}
+
+// Chart.js Radar Chart
+document.addEventListener("DOMContentLoaded", function() {
+    const ctx = document.getElementById('scoresRadarChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: ['Communication', 'Relevance', 'Clarity', 'Fluency', 'Technical Depth'],
+            datasets: [{
+                label: 'Candidate Performance',
+                data: [
+                    {{ scores.communication }},
+                    {{ scores.relevance }},
+                    {{ scores.clarity }},
+                    {{ scores.fluency }},
+                    {{ scores.technical }}
+                ],
+                backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                borderColor: 'rgba(99, 102, 241, 1)',
+                pointBackgroundColor: 'rgba(99, 102, 241, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(99, 102, 241, 1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    angleLines: { color: '#e2e8f0' },
+                    grid: { color: '#f1f5f9' },
+                    suggestedMin: 30,
+                    suggestedMax: 100,
+                    ticks: { stepSize: 20 }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+});
+</script>
+
+<style>
+.score-highlight-card {
+    background: linear-gradient(135deg, #4338ca, #6366f1);
+    color: #ffffff;
+    border: none;
+}
+.score-highlight-card .score-card-label {
+    color: #e0e7ff;
+}
+.score-card-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+}
+.big-score {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin: 0.25rem 0;
+}
+.score-card-sub {
+    font-size: 0.8rem;
+    color: #c7d2fe;
+}
+.metric-score {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--navy);
+    margin: 0.25rem 0 0.5rem;
+}
+.score-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--border);
+    border-radius: 9999px;
+    overflow: hidden;
+}
+.score-bar-fill {
+    height: 100%;
+    background: var(--primary);
+}
+.card-section-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 0.25rem;
+}
+.sw-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+.green-title { color: #065f46; }
+.red-title { color: #991b1b; }
+.sw-list {
+    margin-left: 1.25rem;
+    font-size: 0.88rem;
+    line-height: 1.45;
+}
+.sw-list li { margin-bottom: 0.35rem; }
+.green-list { color: #065f46; }
+.red-list { color: #991b1b; }
+.turn-item {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+}
+.turn-header {
+    background: var(--bg-page);
+    padding: 0.85rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+.turn-title-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-grow: 1;
+}
+.turn-q-text {
+    font-size: 0.95rem;
+    color: var(--navy);
+}
+.turn-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.turn-body {
+    padding: 1.25rem;
+    background: #ffffff;
+    border-top: 1px solid var(--border);
+}
+.candidate-answer-box {
+    margin-bottom: 1rem;
+    font-size: 0.92rem;
+    background: var(--bg-page);
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-sm);
+}
+.candidate-answer-box strong {
+    color: var(--navy);
+    display: block;
+    margin-bottom: 0.25rem;
+}
+.ai-feedback-box {
+    font-size: 0.92rem;
+    padding: 0.85rem 1rem;
+    background: #eff6ff;
+    border-left: 4px solid var(--primary);
+    border-radius: var(--radius-sm);
+    margin-bottom: 1rem;
+}
+.explain-scores-box {
+    font-size: 0.85rem;
+    padding: 0.85rem 1rem;
+    background: #faf5ff;
+    border-radius: var(--radius-sm);
+    border: 1px solid #e9d5ff;
+}
+.explain-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+    color: #475569;
+}
+.cta-prepare-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #f8fafc, #ede9fe);
+    border-color: #c4b5fd;
+    padding: 2rem;
+}
+.cta-content h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 0.35rem;
+}
+.cta-content p {
+    font-size: 0.92rem;
+    color: var(--muted);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Practice Interview — AI Interview Performance Analyzer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="header-flex">
+        <div>
+            <h1 class="page-title">Practice Interview</h1>
+            <p class="page-subtitle">Configure your mock session and practice answering realistic interview questions with instant AI feedback.</p>
+        </div>
+    </div>
+</div>
+
+<div class="card setup-card">
+    <form id="setupForm" onsubmit="handleStartInterview(event)">
+        <!-- Step 1: Role & Interview Type -->
+        <div class="grid-2">
+            <div class="form-group">
+                <label for="role" class="form-label">Job Role *</label>
+                <select id="role" name="role" class="form-control" required>
+                    <option value="Software Developer" selected>Software Developer / Engineer</option>
+                    <option value="Web Developer">Web Developer (Frontend / Backend / Full Stack)</option>
+                    <option value="Data Analyst">Data Analyst</option>
+                    <option value="AI/ML Engineer">AI / Machine Learning Engineer</option>
+                    <option value="Cybersecurity Analyst">Cybersecurity Analyst</option>
+                    <option value="Database Administrator">Database Administrator</option>
+                    <option value="HR Specialist">HR Specialist / Recruiter</option>
+                </select>
+                <span class="field-hint">Choose the specific role you are preparing for.</span>
+            </div>
+
+            <div class="form-group">
+                <label for="interview_type" class="form-label">Interview Type *</label>
+                <select id="interview_type" name="interview_type" class="form-control" required>
+                    <option value="Technical" selected>Technical & Systems</option>
+                    <option value="HR">HR & Behavioral (STAR Method)</option>
+                    <option value="Role-based">Role-Based Real Scenarios</option>
+                    <option value="Resume-based">Resume-Based Deep Dive</option>
+                    <option value="Coding">Coding & Problem Solving</option>
+                </select>
+                <span class="field-hint">Choose between Technical, HR/STAR, Role-Based, Resume-Based, or Coding challenges.</span>
+            </div>
+        </div>
+
+        <!-- Step 2: Difficulty & Question Count -->
+        <div class="grid-2">
+            <div class="form-group">
+                <label for="difficulty" class="form-label">Difficulty Level *</label>
+                <select id="difficulty" name="difficulty" class="form-control" required>
+                    <option value="Easy">Beginner (Foundations & Concepts)</option>
+                    <option value="Medium" selected>Intermediate (Standard Industry Interview)</option>
+                    <option value="Hard">Advanced (Complex Systems & Edge Cases)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="num_questions" class="form-label">Number of Questions *</label>
+                <select id="num_questions" name="num_questions" class="form-control" required>
+                    <option value="3">3 Questions (~6 minutes)</option>
+                    <option value="4" selected>4 Questions (~10 minutes)</option>
+                    <option value="5">5 Questions (~15 minutes)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Hidden industry default to keep backend compatible -->
+        <input type="hidden" id="industry" value="IT & Software">
+
+        <!-- Question Source: Simplified -->
+        <div class="form-group" style="margin-top: 0.5rem;">
+            <label class="form-label">Question Source</label>
+            <div class="source-options">
+                <label class="source-option">
+                    <input type="radio" name="question_source" value="adaptive" checked>
+                    <div>
+                        <strong>Adaptive Questions (Recommended)</strong>
+                        <p>Questions adapt to your resume background and follow up on your answers.</p>
+                    </div>
+                </label>
+
+                <label class="source-option">
+                    <input type="radio" name="question_source" value="question_bank">
+                    <div>
+                        <strong>Question Bank Questions</strong>
+                        <p>Draw questions directly from community and saved question bank records.</p>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Resume Alert -->
+        <div class="resume-alert-pill">
+            <span class="pill-icon">📄</span>
+            <div class="pill-text">
+                {% if resume %}
+                    <strong>Resume Connected:</strong> Questions will reference your actual projects and skills.
+                {% else %}
+                    <strong>No Resume Connected:</strong> Standard questions will be used. <a href="{{ url_for('resume_view') }}">Upload your resume</a> for personalized questions.
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Submit Action -->
+        <div class="form-actions">
+            <button type="submit" id="startBtn" class="btn-primary btn-large">
+                <span id="btnText">Start Interview</span>
+                <span id="btnSpinner" style="display: none;">Preparing Questions...</span>
+            </button>
+            <a href="{{ url_for('dashboard') }}" class="btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+function handleStartInterview(e) {
+    e.preventDefault();
+    const btn = document.getElementById('startBtn');
+    const btnText = document.getElementById('btnText');
+    const btnSpinner = document.getElementById('btnSpinner');
+
+    btn.disabled = true;
+    btnText.style.display = 'none';
+    btnSpinner.style.display = 'inline';
+
+    const payload = {
+        industry: document.getElementById('industry').value,
+        role: document.getElementById('role').value,
+        interview_type: document.getElementById('interview_type').value,
+        difficulty: document.getElementById('difficulty').value,
+        num_questions: document.getElementById('num_questions').value,
+        question_source: document.querySelector('input[name="question_source"]:checked').value
+    };
+
+    fetch("{{ url_for('start_interview') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success' && data.redirect_url) {
+            window.location.href = data.redirect_url;
+        } else {
+            alert(data.message || "Failed to start interview session.");
+            btn.disabled = false;
+            btnText.style.display = 'inline';
+            btnSpinner.style.display = 'none';
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Network error starting interview.");
+        btn.disabled = false;
+        btnText.style.display = 'inline';
+        btnSpinner.style.display = 'none';
+    });
+}
+</script>
+
+<style>
+.setup-card {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 2.25rem;
+}
+.field-hint {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 0.25rem;
+}
+.source-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-top: 0.4rem;
+}
+.source-option {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 1rem;
+    display: flex;
+    gap: 0.75rem;
+    cursor: pointer;
+    background: var(--bg-page);
+    transition: border-color 0.15s ease;
+}
+.source-option:hover {
+    border-color: var(--primary);
+}
+.source-option input {
+    margin-top: 0.2rem;
+}
+.source-option strong {
+    display: block;
+    font-size: 0.92rem;
+    color: var(--navy);
+    margin-bottom: 0.2rem;
+}
+.source-option p {
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.35;
+}
+.resume-alert-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1.15rem;
+    background: var(--bg-page);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    margin: 1.5rem 0;
+    font-size: 0.88rem;
+    color: var(--slate);
+}
+.pill-icon {
+    font-size: 1.3rem;
+}
+.resume-alert-pill a {
+    color: var(--primary);
+    font-weight: 600;
+}
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+    align-items: center;
+}
+.btn-large {
+    padding: 0.75rem 1.6rem;
+    font-size: 1rem;
+}
+</style>
+{% endblock %}

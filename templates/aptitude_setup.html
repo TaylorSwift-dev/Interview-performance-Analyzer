@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Aptitude Practice Room — InterviewPrep AI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <span class="auth-pill-badge">Problem-Solving Mastery</span>
+            <h1 class="page-title">Aptitude Practice Room</h1>
+            <p class="page-subtitle">Select your topics and practice Quantitative, Logical, Verbal, and Data Interpretation tests.</p>
+        </div>
+        <div>
+            <a href="{{ url_for('dashboard') }}" class="btn-outline pill-btn">← Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<div class="grid-2" style="align-items: start; gap: 1.75rem;">
+    <!-- Left Column: Test Configuration Form -->
+    <div class="card">
+        <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--dark-text); margin-bottom: 0.35rem;">Configure Your Test</h3>
+        <p style="color: var(--muted); font-size: 0.88rem; margin-bottom: 1.25rem;">Choose a specific topic or a mixed assessment.</p>
+
+        <form action="{{ url_for('aptitude_start') }}" method="POST">
+            <!-- Category Selection -->
+            <div class="form-group-pastel">
+                <label for="category" class="input-label-styled">Category</label>
+                <select name="category" id="category" class="pastel-input">
+                    <option value="All Categories" selected>All Categories (Mixed Test)</option>
+                    {% for c in categories %}
+                        <option value="{{ c.category }}">{{ c.category }} ({{ c.count }} Questions)</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Difficulty Level -->
+            <div class="form-group-pastel">
+                <label for="difficulty" class="input-label-styled">Difficulty</label>
+                <select name="difficulty" id="difficulty" class="pastel-input">
+                    <option value="Mixed" selected>Mixed (Easy, Medium, Hard)</option>
+                    <option value="Easy">Easy (Foundational)</option>
+                    <option value="Medium">Medium (Campus Hiring Standard)</option>
+                    <option value="Hard">Hard (Challenging)</option>
+                </select>
+            </div>
+
+            <!-- Test Mode Preset -->
+            <div class="form-group-pastel">
+                <label class="input-label-styled">Mode & Duration</label>
+                <div class="mode-preset-grid">
+                    <label class="preset-card">
+                        <input type="radio" name="mode" value="quick">
+                        <div class="preset-content">
+                            <span class="preset-title">⚡ Quick Sprint</span>
+                            <span class="preset-desc">5 Questions • 7 Mins</span>
+                        </div>
+                    </label>
+
+                    <label class="preset-card active-preset">
+                        <input type="radio" name="mode" value="standard" checked>
+                        <div class="preset-content">
+                            <span class="preset-title">⏱️ Standard Test</span>
+                            <span class="preset-desc">10 Questions • 15 Mins</span>
+                        </div>
+                    </label>
+
+                    <label class="preset-card">
+                        <input type="radio" name="mode" value="full">
+                        <div class="preset-content">
+                            <span class="preset-title">🏆 Full Assessment</span>
+                            <span class="preset-desc">20 Questions • 30 Mins</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div style="margin-top: 1.75rem;">
+                <button type="submit" class="btn-pastel-purple full-width">
+                    Start Practice Test Now →
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Right Column: Category Breakdown & Recent History -->
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <!-- Categories Overview Card -->
+        <div class="card">
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--dark-text); margin-bottom: 0.35rem;">Question Coverage</h3>
+            <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 1rem;">Available modules in database:</p>
+
+            <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+                {% for c in categories %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: var(--bg-page); border-radius: var(--radius-md); border: 1px solid var(--border);">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--dark-text);">
+                            <span>
+                                {% if 'Quantitative' in c.category %}📐
+                                {% elif 'Logical' in c.category %}🧩
+                                {% elif 'Verbal' in c.category %}📖
+                                {% else %}📊{% endif %}
+                            </span>
+                            <strong>{{ c.category }}</strong>
+                        </div>
+                        <span class="badge badge-primary">{{ c.count }} Questions</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Recent Attempts Card -->
+        <div class="card">
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--dark-text); margin-bottom: 0.35rem;">Recent Test Attempts</h3>
+            <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 1rem;">Your previous performance and accuracy:</p>
+
+            {% if recent_attempts %}
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    {% for a in recent_attempts %}
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: var(--radius-md);">
+                            <div>
+                                <strong style="font-size: 0.9rem; color: var(--dark-text); display: block;">{{ a.category }}</strong>
+                                <span style="font-size: 0.78rem; color: var(--muted);">{{ a.mode|title }} • {{ (a.time_taken_seconds // 60) }}m {{ (a.time_taken_seconds % 60) }}s</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.65rem;">
+                                <span class="badge {% if a.score_percent >= 70 %}badge-success{% elif a.score_percent < 40 %}badge-danger{% else %}badge-warning{% endif %}">
+                                    {{ a.score_percent }}%
+                                </span>
+                                <a href="{{ url_for('aptitude_result_view', attempt_id=a.attempt_id) }}" class="btn-outline-sm" style="padding: 0.25rem 0.6rem;">Review</a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div style="text-align: center; padding: 1.5rem 1rem; color: var(--muted); font-size: 0.88rem;">
+                    No attempts recorded yet. Launch your first test on the left!
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.mode-preset-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-top: 0.35rem;
+}
+.preset-card {
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 0.5rem;
+    text-align: center;
+    cursor: pointer;
+    background: #ffffff;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.preset-card input {
+    display: none;
+}
+.preset-card:hover {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+}
+.preset-card:has(input:checked) {
+    border-color: var(--primary);
+    background: var(--lavender-light);
+    box-shadow: 0 4px 10px rgba(146, 116, 200, 0.15);
+}
+.preset-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--dark-text);
+    display: block;
+    margin-bottom: 0.2rem;
+}
+.preset-desc {
+    font-size: 0.75rem;
+    color: var(--muted);
+}
+@media (max-width: 768px) {
+    .mode-preset-grid { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}

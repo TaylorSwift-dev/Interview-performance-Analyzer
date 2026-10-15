@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — InterviewPrep AI{% endblock %}
+
+{% block content %}
+<!-- Welcome Banner in Pastel Theme -->
+<div class="card" style="background: linear-gradient(135deg, #FFFFFF 0%, #FAF5FD 100%); border-radius: var(--radius-xl); padding: 2.25rem; margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
+        <div>
+            <span class="auth-pill-badge">Candidate Dashboard</span>
+            <h1 class="page-title" style="font-size: 2.2rem; margin: 0.35rem 0 0.25rem;">
+                Welcome back, {{ user.name }}! ✨
+            </h1>
+            <p style="color: var(--muted); font-size: 1rem;">
+                Target: <strong>{{ user.target_role or 'Software Developer' }}</strong> • {{ user.target_industry or 'IT & Software' }}
+            </p>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <a href="{{ url_for('interview_setup') }}" class="btn-pastel-purple pill-btn">
+                🎙️ Start Mock Interview
+            </a>
+            <a href="{{ url_for('aptitude_setup_view') }}" class="btn-outline pill-btn" style="border-color: var(--lavender); color: var(--primary);">
+                🧮 Practice Aptitude
+            </a>
+            <a href="{{ url_for('resume_view') }}" class="btn-outline pill-btn">
+                📄 My Resumes
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 4 Key Metrics Cards -->
+<div class="grid-4" style="margin-bottom: 2rem;">
+    <div class="card" style="padding: 1.5rem; text-align: left;">
+        <span style="font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">
+            Mock Interviews
+        </span>
+        <div style="font-size: 2.2rem; font-weight: 850; color: var(--dark-text); margin: 0.25rem 0;">
+            {{ total_completed }}
+        </div>
+        <p style="font-size: 0.82rem; color: var(--muted);">Completed sessions</p>
+    </div>
+
+    <div class="card" style="padding: 1.5rem; text-align: left;">
+        <span style="font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">
+            Latest Interview Score
+        </span>
+        <div style="font-size: 2.2rem; font-weight: 850; color: var(--primary); margin: 0.25rem 0;">
+            {% if total_completed > 0 %}
+                {{ latest_score }}%
+            {% else %}
+                <span style="color: var(--muted); font-size: 1.5rem;">—</span>
+            {% endif %}
+        </div>
+        <p style="font-size: 0.82rem; color: var(--muted);">
+            {% if total_completed >= 2 %}
+                <span style="color: {% if improvement_delta >= 0 %}#059669{% else %}#dc2626{% endif %}; font-weight: 700;">
+                    {% if improvement_delta > 0 %}+{% endif %}{{ improvement_delta }}% vs previous
+                </span>
+            {% elif total_completed == 1 %}
+                First session benchmarked
+            {% else %}
+                No interviews taken yet
+            {% endif %}
+        </p>
+    </div>
+
+    <div class="card" style="padding: 1.5rem; text-align: left;">
+        <span style="font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">
+            Aptitude Tests
+        </span>
+        <div style="font-size: 2.2rem; font-weight: 850; color: var(--dark-text); margin: 0.25rem 0;">
+            {{ aptitude_stats.total_tests if aptitude_stats else 0 }}
+        </div>
+        <p style="font-size: 0.82rem; color: var(--muted);">
+            {% if aptitude_stats and aptitude_stats.total_tests > 0 %}
+                Avg accuracy: <strong>{{ aptitude_stats.avg_score }}%</strong>
+            {% else %}
+                No tests completed yet
+            {% endif %}
+        </p>
+    </div>
+
+    <div class="card" style="padding: 1.5rem; text-align: left;">
+        <span style="font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">
+            Resume Status
+        </span>
+        <div style="font-size: 1.4rem; font-weight: 800; color: {% if resume %}#059669{% else %}var(--muted){% endif %}; margin: 0.55rem 0;">
+            {% if resume %}
+                ✓ Active
+            {% else %}
+                None Uploaded
+            {% endif %}
+        </div>
+        <p style="font-size: 0.82rem; color: var(--muted);">
+            {% if resume %}
+                {{ resume_skills|length }} skills extracted
+            {% else %}
+                <a href="{{ url_for('resume_view') }}" class="pastel-link">Upload PDF resume →</a>
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+<!-- Recommended Next Practice Card -->
+{% if recommended_plan %}
+    <div class="card" style="background: linear-gradient(135deg, #FFFDF8, #FAF7FD); border-color: var(--lavender); margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <span class="badge badge-warning" style="margin-bottom: 0.35rem;">Recommended Next Practice</span>
+                <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--dark-text); margin: 0.25rem 0;">
+                    Focus Area: {{ recommended_plan.weak_area }}
+                </h3>
+                <p style="color: var(--slate); font-size: 0.92rem;">
+                    {{ recommended_plan.recommendation }}
+                </p>
+            </div>
+            {% if interviews %}
+                <a href="{{ url_for('prepare_next', interview_id=interviews[0].interview_id) }}" class="btn-pastel-purple pill-btn">
+                    Start Targeted Drill →
+                </a>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+
+<!-- Recent Activity: Mock Interviews & Aptitude Tests -->
+<div class="grid-2" style="align-items: start; margin-bottom: 2rem;">
+    <!-- Recent Mock Interviews -->
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border);">
+            <div>
+                <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--dark-text);">Recent Mock Interviews</h3>
+                <p style="font-size: 0.82rem; color: var(--muted);">Previous interview attempts and scores</p>
+            </div>
+            <a href="{{ url_for('interview_setup') }}" class="btn-outline-sm">+ New Interview</a>
+        </div>
+
+        {% if interviews %}
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                {% for iv in interviews[:4] %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.85rem 1rem; background: var(--bg-page); border-radius: var(--radius-md); border: 1px solid var(--border);">
+                        <div>
+                            <strong style="color: var(--dark-text); font-size: 0.92rem; display: block;">{{ iv.job_role }}</strong>
+                            <span style="font-size: 0.78rem; color: var(--muted);">{{ iv.interview_type }} • {{ iv.difficulty }} • {{ iv.date[:10] }}</span>
+                        </div>
+                        <div style="text-align: right;">
+                            {% if iv.status == 'completed' %}
+                                <span style="font-weight: 800; color: var(--primary); font-size: 1.05rem; display: block;">{{ iv.overall_score }}%</span>
+                                <a href="{{ url_for('interview_result', interview_id=iv.interview_id) }}" class="pastel-link" style="font-size: 0.78rem;">View Feedback →</a>
+                            {% else %}
+                                <a href="{{ url_for('interview_room', interview_id=iv.interview_id) }}" class="btn-primary-sm" style="font-size: 0.78rem;">Resume</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div style="text-align: center; padding: 2.5rem 1rem;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎙️</div>
+                <h4 style="color: var(--dark-text); margin-bottom: 0.25rem;">No mock interviews taken yet</h4>
+                <p style="color: var(--muted); font-size: 0.88rem; margin-bottom: 1rem;">Complete your first adaptive session with Ava.</p>
+                <a href="{{ url_for('interview_setup') }}" class="btn-pastel-purple pill-btn" style="font-size: 0.88rem;">Start First Mock Interview</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Recent Aptitude Tests -->
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border);">
+            <div>
+                <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--dark-text);">Recent Aptitude Tests</h3>
+                <p style="font-size: 0.82rem; color: var(--muted);">Problem-solving quizzes and accuracy</p>
+            </div>
+            <a href="{{ url_for('aptitude_setup_view') }}" class="btn-outline-sm">+ New Quiz</a>
+        </div>
+
+        {% if aptitude_attempts %}
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                {% for att in aptitude_attempts[:4] %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.85rem 1rem; background: var(--bg-page); border-radius: var(--radius-md); border: 1px solid var(--border);">
+                        <div>
+                            <strong style="color: var(--dark-text); font-size: 0.92rem; display: block;">{{ att.category }}</strong>
+                            <span style="font-size: 0.78rem; color: var(--muted);">{{ att.mode|title }} • {{ att.difficulty }} • {{ att.submitted_at[:10] }}</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="font-weight: 800; color: {% if att.score_percent >= 70 %}#059669{% elif att.score_percent < 40 %}#dc2626{% else %}var(--primary){% endif %}; font-size: 1.05rem; display: block;">
+                                {{ att.score_percent }}%
+                            </span>
+                            <a href="{{ url_for('aptitude_result_view', attempt_id=att.attempt_id) }}" class="pastel-link" style="font-size: 0.78rem;">Solutions →</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div style="text-align: center; padding: 2.5rem 1rem;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">🧮</div>
+                <h4 style="color: var(--dark-text); margin-bottom: 0.25rem;">No aptitude tests taken yet</h4>
+                <p style="color: var(--muted); font-size: 0.88rem; margin-bottom: 1rem;">Practice Quantitative, Logical, Verbal, or Data Interpretation questions.</p>
+                <a href="{{ url_for('aptitude_setup_view') }}" class="btn-pastel-purple pill-btn" style="font-size: 0.88rem;">Start Aptitude Practice</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

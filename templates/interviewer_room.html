@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Conduct Interview: {{ iv_session.title }} — AI Interview Performance Analyzer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="header-flex">
+        <div>
+            <div class="hero-badge-pill" style="margin-bottom: 0.5rem;">
+                <span>Live Interviewer Evaluation Room</span>
+            </div>
+            <h1 class="page-title">{{ iv_session.title }}</h1>
+            <p class="page-subtitle">Target: <strong>{{ iv_session.job_role }}</strong> • {{ iv_session.interview_type }} • {{ iv_session.difficulty }}</p>
+        </div>
+        <div class="header-actions">
+            <a href="{{ url_for('interviewer_dashboard') }}" class="btn-outline">← Back to Workspace</a>
+        </div>
+    </div>
+</div>
+
+<div class="grid-2" style="align-items: start; gap: 1.5rem;">
+    <!-- Left Column: Candidate Dossier & Resume Insights -->
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <!-- Candidate Information Card -->
+        <div class="card candidate-dossier-card">
+            <div class="participant-header">
+                <div class="participant-avatar-wrapper">
+                    <div class="candidate-initials-circle" style="width: 50px; height: 50px; border-radius: 50%; background: var(--navy); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.25rem;">
+                        {{ (iv_session.candidate_name or 'Candidate')[0]|upper }}
+                    </div>
+                    <div class="participant-meta">
+                        <span class="badge badge-primary">Candidate Dossier</span>
+                        <h3 class="participant-name" style="margin: 0.25rem 0;">{{ iv_session.candidate_name or 'Unassigned Candidate' }}</h3>
+                        <p class="participant-title">{{ iv_session.candidate_email or 'No email provided' }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dossier-details" style="margin-top: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.88rem;">
+                <div><strong>Education:</strong> {{ iv_session.education or 'Not provided' }}</div>
+                <div><strong>College:</strong> {{ iv_session.college_name or 'Not specified' }}</div>
+                <div><strong>Declared Skills:</strong> {{ iv_session.technical_skills or 'Not specified' }}</div>
+            </div>
+        </div>
+
+        <!-- Candidate Resume Summary -->
+        <div class="card">
+            <h3 class="section-title">Resume Background</h3>
+            {% if candidate_resume %}
+                <p class="card-subtitle" style="margin-bottom: 0.75rem;">Extracted from <strong>{{ candidate_resume.original_filename }}</strong></p>
+                <div style="font-size: 0.88rem; line-height: 1.5; color: var(--slate);">
+                    <div style="margin-bottom: 0.5rem;">
+                        <strong>Extracted Skills:</strong>
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.35rem;">
+                            {% if candidate_resume.skills %}
+                                <span class="badge">{{ candidate_resume.skills }}</span>
+                            {% else %}
+                                <span class="text-muted">None extracted</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if candidate_resume.projects %}
+                        <div style="margin-top: 0.5rem;">
+                            <strong>Projects:</strong>
+                            <p style="margin: 0.25rem 0; font-size: 0.82rem;">{{ candidate_resume.projects }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="empty-state" style="padding: 1rem;">
+                    <p style="color: var(--muted); margin: 0;">No resume uploaded by candidate.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Selected Questions -->
+        <div class="card">
+            <h3 class="section-title">Interview Questions ({{ questions|length }})</h3>
+            <div class="questions-mini-list" style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.75rem;">
+                {% for q in questions %}
+                    <div class="question-mini-item" style="padding: 0.75rem; background: var(--bg-page); border-radius: var(--radius-md); border: 1px solid var(--border);">
+                        <span class="badge badge-accent" style="margin-bottom: 0.25rem;">Q{{ loop.index }} • {{ q.category }}</span>
+                        <p style="font-size: 0.88rem; font-weight: 600; color: var(--navy); margin: 0.25rem 0;">{{ q.question_text }}</p>
+                        {% if q.expected_answer_or_rubric %}
+                            <p style="font-size: 0.78rem; color: var(--muted); margin: 0;"><em>Rubric: {{ q.expected_answer_or_rubric }}</em></p>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <p style="color: var(--muted); font-size: 0.85rem;">No questions pre-selected. Conduct dynamic assessment using the form on the right.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Live Interviewer Scoring & Feedback Form -->
+    <div class="card scoring-workspace-card">
+        <h3 class="section-title">Evaluation & Scoring Form</h3>
+        <p class="card-subtitle" style="margin-bottom: 1.25rem;">Submit evaluation scores and feedback for this candidate.</p>
+
+        <form id="evaluationForm" onsubmit="submitInterviewerEvaluation(event)">
+            <input type="hidden" id="sessionId" value="{{ iv_session.session_id }}">
+
+            <div class="grid-3">
+                <div class="form-group">
+                    <label for="techScore" class="form-label">Technical Score (0-100) *</label>
+                    <input type="number" id="techScore" class="form-control" min="0" max="100" value="{{ iv_session.technical_score|int if iv_session.technical_score else 80 }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="commScore" class="form-label">Communication (0-100) *</label>
+                    <input type="number" id="commScore" class="form-control" min="0" max="100" value="{{ iv_session.communication_score|int if iv_session.communication_score else 75 }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="overallScore" class="form-label">Overall Score (0-100) *</label>
+                    <input type="number" id="overallScore" class="form-control" min="0" max="100" value="{{ iv_session.overall_score|int if iv_session.overall_score else 78 }}" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="meetingNotes" class="form-label">Interviewer Notes & Question Responses</label>
+                <textarea id="meetingNotes" class="form-control" rows="6" placeholder="Document candidate's responses, code quality, algorithms explained, and edge-case handling...">{{ iv_session.meeting_notes or '' }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="feedback" class="form-label">Candidate Feedback & Recommendations</label>
+                <textarea id="feedback" class="form-control" rows="5" placeholder="Highlight key strengths, areas for improvement, and specific preparation topics for the candidate...">{{ iv_session.interviewer_feedback or '' }}</textarea>
+            </div>
+
+            <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem; justify-content: flex-end;">
+                <button type="submit" id="saveEvalBtn" class="btn-primary pill-btn" style="padding: 0.75rem 1.75rem !important;">
+                    Finalize & Submit Candidate Evaluation ✓
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function submitInterviewerEvaluation(e) {
+    e.preventDefault();
+    const btn = document.getElementById('saveEvalBtn');
+    btn.disabled = true;
+    btn.innerText = "Saving Evaluation...";
+
+    const payload = {
+        session_id: parseInt(document.getElementById('sessionId').value),
+        technical_score: parseFloat(document.getElementById('techScore').value),
+        communication_score: parseFloat(document.getElementById('commScore').value),
+        overall_score: parseFloat(document.getElementById('overallScore').value),
+        meeting_notes: document.getElementById('meetingNotes').value,
+        feedback: document.getElementById('feedback').value
+    };
+
+    fetch("{{ url_for('interviewer_submit_evaluation') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success' && data.redirect_url) {
+            window.location.href = data.redirect_url;
+        } else {
+            alert(data.message || "Error submitting evaluation.");
+            btn.disabled = false;
+            btn.innerText = "Finalize & Submit Candidate Evaluation ✓";
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Network error submitting evaluation.");
+        btn.disabled = false;
+        btn.innerText = "Finalize & Submit Candidate Evaluation ✓";
+    });
+}
+</script>
+{% endblock %}

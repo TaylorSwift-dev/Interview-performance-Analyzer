@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Student Registration — InterviewPrep AI{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper" style="max-width: 540px;">
+    <div class="auth-card-clean">
+        <div class="auth-header">
+            <span class="auth-pill-badge">Candidate Onboarding</span>
+            <h1 class="auth-card-title">Create your student account</h1>
+            <p class="auth-card-subtitle">Get interview-ready with realistic aptitude tests and AI mock interviews.</p>
+        </div>
+
+        <form action="{{ url_for('register') }}" method="POST">
+            <div class="form-group-pastel">
+                <label for="name" class="input-label-styled">Full Name *</label>
+                <div class="input-icon-wrapper">
+                    <span class="input-prefix-icon">👤</span>
+                    <input type="text" id="name" name="name" class="pastel-input" placeholder="e.g. Maya Patel" value="{{ name or '' }}" required autofocus>
+                </div>
+            </div>
+
+            <div class="form-group-pastel">
+                <label for="email" class="input-label-styled">Email address *</label>
+                <div class="input-icon-wrapper">
+                    <span class="input-prefix-icon">✉️</span>
+                    <input type="email" id="email" name="email" class="pastel-input" placeholder="e.g. maya@college.edu" value="{{ email or '' }}" required>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group-pastel">
+                    <label for="reg_password" class="input-label-styled">Password *</label>
+                    <div class="input-icon-wrapper">
+                        <span class="input-prefix-icon">🔒</span>
+                        <input type="password" id="reg_password" name="password" class="pastel-input" placeholder="Min. 6 chars" minlength="6" required>
+                    </div>
+                </div>
+
+                <div class="form-group-pastel">
+                    <label for="confirm_password" class="input-label-styled">Confirm Password *</label>
+                    <div class="input-icon-wrapper">
+                        <span class="input-prefix-icon">🔒</span>
+                        <input type="password" id="confirm_password" name="confirm_password" class="pastel-input" placeholder="Repeat password" minlength="6" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group-pastel">
+                <label for="target_role" class="input-label-styled">Target Job Role</label>
+                <select id="target_role" name="target_role" class="pastel-input">
+                    <option value="Software Developer" selected>Software Developer / Engineer</option>
+                    <option value="Web Developer">Web Developer (Frontend / Backend)</option>
+                    <option value="Data Analyst">Data Analyst</option>
+                    <option value="AI/ML Engineer">AI / Machine Learning Engineer</option>
+                    <option value="Cloud / DevOps Engineer">Cloud / DevOps Engineer</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn-pastel-purple full-width" style="margin-top: 0.75rem;">
+                Create Student Account →
+            </button>
+        </form>
+
+        <div class="auth-footer-links" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1.5rem;">
+            <div>
+                Already have an account? <a href="{{ url_for('login') }}" class="pastel-link" style="font-weight: 700;">Log in here</a>
+            </div>
+            <div style="font-size: 0.82rem; color: var(--muted);">
+                Are you an interviewer? <a href="{{ url_for('interviewer_register') }}" class="pastel-link">Request Interviewer Access</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

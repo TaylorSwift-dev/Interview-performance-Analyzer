@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Student Profile — AI Interview Performance Analyzer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <span class="badge badge-primary">Account Management</span>
+    <h1 class="page-title">My Profile & Settings</h1>
+    <p class="page-subtitle">Update your personal information, college affiliation, target industry, and core technical skills.</p>
+</div>
+
+<div class="card profile-card">
+    <form action="{{ url_for('profile_view') }}" method="POST">
+        <div class="grid-2">
+            <div class="form-group">
+                <label for="name" class="form-label">Full Name *</label>
+                <input type="text" id="name" name="name" class="form-control" value="{{ user.name if user else '' }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email" class="form-label">Email Address (Read-Only)</label>
+                <input type="email" id="email" name="email" class="form-control" value="{{ user.email if user else '' }}" readonly disabled>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="form-group">
+                <label for="college_name" class="form-label">College / University</label>
+                <input type="text" id="college_name" name="college_name" class="form-control" value="{{ user.college_name or '' }}" placeholder="e.g. National Institute of Technology">
+            </div>
+
+            <div class="form-group">
+                <label for="education" class="form-label">Degree & Department</label>
+                <input type="text" id="education" name="education" class="form-control" value="{{ user.education or '' }}" placeholder="e.g. B.Tech Computer Engineering">
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="form-group">
+                <label for="experience_level" class="form-label">Experience Level</label>
+                <select id="experience_level" name="experience_level" class="form-control">
+                    <option value="Fresher" {% if user and user.experience_level == 'Fresher' %}selected{% endif %}>Fresher / Student</option>
+                    <option value="Internship" {% if user and user.experience_level == 'Internship' %}selected{% endif %}>Internship Experience</option>
+                    <option value="1-2 Years" {% if user and user.experience_level == '1-2 Years' %}selected{% endif %}>Junior (1-2 Years)</option>
+                    <option value="3+ Years" {% if user and user.experience_level == '3+ Years' %}selected{% endif %}>Mid-Level (3+ Years)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="target_industry" class="form-label">Target Industry</label>
+                <select id="target_industry" name="target_industry" class="form-control">
+                    <option value="IT & Software" {% if user and user.target_industry == 'IT & Software' %}selected{% endif %}>IT & Software Engineering</option>
+                    <option value="Banking & FinTech" {% if user and user.target_industry == 'Banking & FinTech' %}selected{% endif %}>Banking & FinTech</option>
+                    <option value="Healthcare Tech" {% if user and user.target_industry == 'Healthcare Tech' %}selected{% endif %}>Healthcare & HealthTech</option>
+                    <option value="E-Commerce" {% if user and user.target_industry == 'E-Commerce' %}selected{% endif %}>E-Commerce & Retail</option>
+                    <option value="Cybersecurity" {% if user and user.target_industry == 'Cybersecurity' %}selected{% endif %}>Cybersecurity</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="form-group">
+                <label for="target_role" class="form-label">Target Job Role</label>
+                <select id="target_role" name="target_role" class="form-control">
+                    <option value="Software Developer" {% if user and user.target_role == 'Software Developer' %}selected{% endif %}>Software Developer / Engineer</option>
+                    <option value="Web Developer" {% if user and user.target_role == 'Web Developer' %}selected{% endif %}>Web / Full Stack Developer</option>
+                    <option value="Data Analyst" {% if user and user.target_role == 'Data Analyst' %}selected{% endif %}>Data Analyst</option>
+                    <option value="AI/ML Engineer" {% if user and user.target_role == 'AI/ML Engineer' %}selected{% endif %}>AI / ML Engineer</option>
+                    <option value="Cybersecurity Analyst" {% if user and user.target_role == 'Cybersecurity Analyst' %}selected{% endif %}>Cybersecurity Analyst</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="technical_skills" class="form-label">Technical Skills (Comma-separated)</label>
+                <input type="text" id="technical_skills" name="technical_skills" class="form-control" value="{{ user.technical_skills or '' }}" placeholder="e.g. Python, Flask, SQL, React, Docker">
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-primary">Save Profile Changes</button>
+            <a href="{{ url_for('dashboard') }}" class="btn-outline">Back to Dashboard</a>
+        </div>
+    </form>
+</div>
+
+<style>
+.profile-card {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2.5rem;
+}
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+}
+</style>
+{% endblock %}

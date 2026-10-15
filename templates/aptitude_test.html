@@ -1,0 +1,441 @@
+{% extends "base.html" %}
+
+{% block title %}Aptitude Test in Progress — AI Interview Performance Analyzer{% endblock %}
+
+{% block content %}
+<!-- Top Test Status Bar -->
+<div class="aptitude-test-header">
+    <div class="test-meta-chips">
+        <span class="badge badge-primary">{{ category }}</span>
+        <span class="badge">{{ mode|title }} Mode</span>
+        <span class="badge">{{ difficulty }} Level</span>
+    </div>
+
+    <!-- Countdown Timer -->
+    <div class="test-timer-chip" id="timerChip">
+        <span class="timer-icon">⏱️</span>
+        <span class="timer-text" id="timeRemainingDisplay">00:00</span>
+    </div>
+</div>
+
+<!-- Progress Bar -->
+<div class="test-progress-strip">
+    <div class="progress-info-flex">
+        <span>Question <strong id="currentQuestionNum">1</strong> of <strong>{{ questions|length }}</strong></span>
+        <span>Answered: <strong id="answeredCounter">0</strong>/{{ questions|length }}</span>
+    </div>
+    <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="testProgressFill" style="width: {{ (1 / questions|length * 100)|round|int }}%;"></div>
+    </div>
+</div>
+
+<div class="test-room-layout">
+    <!-- Main Question Runner -->
+    <div class="card question-runner-card">
+        {% for q in questions %}
+            {% set q_idx = loop.index0 %}
+            <div class="question-slide" id="qSlide_{{ q_idx }}" style="{% if not loop.first %}display: none;{% endif %}">
+                <div class="question-header">
+                    <span class="q-topic-tag">{{ q.topic }} • {{ q.difficulty }}</span>
+                    <h2 class="q-prompt-text">{{ loop.index }}. {{ q.question_text }}</h2>
+                </div>
+
+                <div class="options-container">
+                    {% for opt in q.options %}
+                        <label class="option-label" onclick="selectAnswer('{{ q.id }}', '{{ opt.key }}', {{ q_idx }})">
+                            <input type="radio" name="opt_{{ q.id }}" value="{{ opt.key }}" class="option-radio">
+                            <span class="option-key-circle">{{ opt.key }}</span>
+                            <span class="option-text-span">{{ opt.text }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+
+        <!-- Navigation Buttons -->
+        <div class="test-nav-actions">
+            <button type="button" class="btn-outline" id="prevBtn" onclick="navigateQuestion(-1)" disabled>
+                ← Previous
+            </button>
+            <div style="display: flex; gap: 0.75rem;">
+                <button type="button" class="btn-outline" id="clearBtn" onclick="clearCurrentAnswer()">
+                    Clear Choice
+                </button>
+                <button type="button" class="btn-primary" id="nextBtn" onclick="navigateQuestion(1)">
+                    Next Question →
+                </button>
+                <button type="button" class="btn-cyan-pill pill-btn" id="finishBtn" onclick="confirmSubmitTest()" style="display: none;">
+                    Finish & Submit Test ✓
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Sidebar: Question Palette Grid -->
+    <div class="card palette-card">
+        <h4 class="palette-title">Question Palette</h4>
+        <div class="palette-grid">
+            {% for q in questions %}
+                <button type="button" class="palette-btn {% if loop.first %}current{% endif %}" id="palBtn_{{ loop.index0 }}" onclick="jumpToQuestion({{ loop.index0 }})">
+                    {{ loop.index }}
+                </button>
+            {% endfor %}
+        </div>
+
+        <div class="palette-legend">
+            <div class="legend-item"><span class="leg-dot answered"></span> Answered</div>
+            <div class="legend-item"><span class="leg-dot unvisited"></span> Unanswered</div>
+            <div class="legend-item"><span class="leg-dot current"></span> Current</div>
+        </div>
+
+        <button type="button" class="btn-primary" onclick="confirmSubmitTest()" style="width: 100%; justify-content: center; margin-top: 1.5rem;">
+            Submit Test Now
+        </button>
+    </div>
+</div>
+
+<script>
+const totalQuestions = {{ questions|length }};
+const attemptId = "{{ attempt_id }}";
+let currentIndex = 0;
+let userAnswers = {}; // { qid: 'A' }
+let totalSeconds = {{ total_seconds }};
+let timeTakenSeconds = 0;
+let timerInterval = null;
+
+// Timer Logic
+timerInterval = setInterval(() => {
+    totalSeconds--;
+    timeTakenSeconds++;
+    if (totalSeconds < 0) {
+        clearInterval(timerInterval);
+        alert("Time is up! Submitting your test answers automatically.");
+        submitTestAnswers();
+        return;
+    }
+    const mins = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+    const secs = String(totalSeconds % 60).padStart(2, '0');
+    document.getElementById('timeRemainingDisplay').innerText = `${mins}:${secs}`;
+    if (totalSeconds <= 120) {
+        document.getElementById('timerChip').classList.add('timer-warning');
+    }
+}, 1000);
+
+// Answer selection handler
+function selectAnswer(qid, optKey, qIndex) {
+    userAnswers[qid] = optKey;
+    const slide = document.getElementById(`qSlide_${qIndex}`);
+    slide.querySelectorAll('.option-label').forEach(lbl => lbl.classList.remove('selected'));
+    const input = slide.querySelector(`input[value="${optKey}"]`);
+    if (input) {
+        input.checked = true;
+        input.closest('.option-label').classList.add('selected');
+    }
+    
+    // Update Palette
+    const palBtn = document.getElementById(`palBtn_${qIndex}`);
+    palBtn.classList.add('answered');
+
+    updateAnsweredCount();
+}
+
+function clearCurrentAnswer() {
+    const currentSlide = document.getElementById(`qSlide_${currentIndex}`);
+    const selectedInput = currentSlide.querySelector('input:checked');
+    if (selectedInput) {
+        const qid = selectedInput.name.replace('opt_', '');
+        delete userAnswers[qid];
+        selectedInput.checked = false;
+        currentSlide.querySelectorAll('.option-label').forEach(lbl => lbl.classList.remove('selected'));
+        document.getElementById(`palBtn_${currentIndex}`).classList.remove('answered');
+        updateAnsweredCount();
+    }
+}
+
+function updateAnsweredCount() {
+    const count = Object.keys(userAnswers).length;
+    document.getElementById('answeredCounter').innerText = count;
+}
+
+// Navigation
+function jumpToQuestion(idx) {
+    if (idx < 0 || idx >= totalQuestions) return;
+    
+    // Hide current
+    document.getElementById(`qSlide_${currentIndex}`).style.display = 'none';
+    document.getElementById(`palBtn_${currentIndex}`).classList.remove('current');
+
+    currentIndex = idx;
+
+    // Show next
+    document.getElementById(`qSlide_${currentIndex}`).style.display = 'block';
+    document.getElementById(`palBtn_${currentIndex}`).classList.add('current');
+
+    document.getElementById('currentQuestionNum').innerText = currentIndex + 1;
+    const pct = Math.round(((currentIndex + 1) / totalQuestions) * 100);
+    document.getElementById('testProgressFill').style.width = `${pct}%`;
+
+    // Button states
+    document.getElementById('prevBtn').disabled = (currentIndex === 0);
+    if (currentIndex === totalQuestions - 1) {
+        document.getElementById('nextBtn').style.display = 'none';
+        document.getElementById('finishBtn').style.display = 'inline-flex';
+    } else {
+        document.getElementById('nextBtn').style.display = 'inline-flex';
+        document.getElementById('finishBtn').style.display = 'none';
+    }
+}
+
+function navigateQuestion(step) {
+    jumpToQuestion(currentIndex + step);
+}
+
+function confirmSubmitTest() {
+    const answered = Object.keys(userAnswers).length;
+    const unanswered = totalQuestions - answered;
+    let msg = `You have answered ${answered} of ${totalQuestions} questions.`;
+    if (unanswered > 0) {
+        msg += ` ${unanswered} questions are unanswered. Are you sure you want to finish?`;
+    } else {
+        msg += ` Ready to submit for immediate scoring?`;
+    }
+
+    if (confirm(msg)) {
+        submitTestAnswers();
+    }
+}
+
+function submitTestAnswers() {
+    clearInterval(timerInterval);
+
+    fetch("{{ url_for('aptitude_submit') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            attempt_id: attemptId,
+            answers: userAnswers,
+            time_taken_seconds: timeTakenSeconds
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success' && data.redirect_url) {
+            window.location.href = data.redirect_url;
+        } else {
+            alert(data.message || "Error submitting test answers.");
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Network error evaluating test answers.");
+    });
+}
+</script>
+
+<style>
+.aptitude-test-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+.test-meta-chips {
+    display: flex;
+    gap: 0.5rem;
+}
+.test-timer-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #ffffff;
+    border: 2px solid var(--border);
+    padding: 0.45rem 1rem;
+    border-radius: 9999px;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--navy);
+    box-shadow: var(--shadow-sm);
+}
+.timer-warning {
+    border-color: #ef4444;
+    background: #fee2e2;
+    color: #991b1b;
+    animation: timerPulse 1s infinite;
+}
+@keyframes timerPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+.test-progress-strip {
+    margin-bottom: 1.5rem;
+}
+.progress-info-flex {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 0.35rem;
+}
+.test-room-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 1.5rem;
+    align-items: start;
+}
+.question-runner-card {
+    padding: 2rem;
+    min-height: 440px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.q-topic-tag {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+    margin-bottom: 0.4rem;
+}
+.q-prompt-text {
+    font-size: 1.28rem;
+    font-weight: 700;
+    color: var(--navy);
+    line-height: 1.45;
+    margin-bottom: 1.5rem;
+}
+.options-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    margin-bottom: 2rem;
+}
+.option-label {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.95rem 1.15rem;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    background: #ffffff;
+    transition: all 0.15s ease;
+}
+.option-label:hover {
+    border-color: var(--lavender);
+    background: var(--lavender-light);
+}
+.option-label.selected {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+    box-shadow: 0 4px 10px rgba(146, 116, 200, 0.15);
+}
+.option-radio {
+    display: none;
+}
+.option-key-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.85rem;
+    color: var(--dark-text);
+    flex-shrink: 0;
+}
+.option-label.selected .option-key-circle {
+    background: var(--primary);
+    color: #ffffff;
+    border-color: var(--primary);
+}
+.option-text-span {
+    font-size: 0.95rem;
+    color: var(--dark-text);
+    line-height: 1.4;
+    font-weight: 500;
+}
+.test-nav-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+    margin-top: 1rem;
+}
+.palette-card {
+    padding: 1.5rem;
+}
+.palette-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 1rem;
+}
+.palette-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.5rem;
+}
+.palette-btn {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: #ffffff;
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: var(--navy);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.palette-btn:hover {
+    border-color: var(--primary);
+}
+.palette-btn.answered {
+    background: var(--lavender);
+    color: var(--primary-hover);
+    border-color: var(--primary);
+    font-weight: 800;
+}
+.palette-btn.current {
+    border: 2px solid var(--primary);
+    box-shadow: 0 0 0 3px rgba(146, 116, 200, 0.25);
+    background: var(--primary-soft);
+}
+.palette-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.78rem;
+    color: var(--muted);
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.leg-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+.leg-dot.answered { background: #10b981; }
+.leg-dot.unvisited { background: #ffffff; border: 1px solid var(--border); }
+.leg-dot.current { background: #ffffff; border: 2px solid var(--primary); }
+
+@media (max-width: 860px) {
+    .test-room-layout {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
